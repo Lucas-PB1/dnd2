@@ -1,34 +1,50 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { createClient as createServerCookieClient } from "@/lib/supabase/server";
+import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/env";
 import { ApiError } from "@/lib/api/errors";
-import type { SupabaseClient } from "@supabase/supabase-js";
 
-async function assertAuthenticated(
-  supabase: SupabaseClient,
-): Promise<string> {
-  // Lazy init (@supabase/ssr): carrega sessão antes de queries PostgREST.
-  const { data: sessionData, error: sessionError } =
-    await supabase.auth.getSession();
+/**
+ * Cliente Supabase com JWT do usuário fixo no PostgREST.
+ * O createServerClient (@supabase/ssr) valida auth via cookies, mas o fetch
+ * das queries pode cair na publishable key (role anon) sem accessToken explícito.
+ */
+export async function createAuthedClient() {
+  const cookieClient = await createServerCookieClient();
 
-  if (sessionError || !sessionData.session?.access_token) {
+  const {
+    data: { session },
+    error: sessionError,
+  } = await cookieClient.auth.getSession();
+
+  if (sessionError || !session?.access_token) {
     throw new ApiError("Não autenticado.", 401);
   }
 
   const {
     data: { user },
     error: userError,
-  } = await supabase.auth.getUser();
+  } = await cookieClient.auth.getUser();
 
   if (userError || !user?.id) {
     throw new ApiError("Não autenticado.", 401);
   }
 
-  return user.id;
-}
+  const accessToken = session.access_token;
 
-export async function createAuthedClient() {
-  const supabase = await createClient();
-  const userId = await assertAuthenticated(supabase);
-  return { supabase, userId };
+  const supabase = createSupabaseClient(
+    getSupabaseUrl(),
+    getSupabasePublishableKey(),
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+      accessToken: async () => accessToken,
+    },
+  );
+
+  return { supabase, userId: user.id };
 }
 
 export async function requireUserId(): Promise<string> {

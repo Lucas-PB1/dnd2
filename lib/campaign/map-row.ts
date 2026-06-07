@@ -24,12 +24,8 @@ export function mapCampaignRow(row: CampaignRow): Campaign {
   };
 }
 
-export const CAMPAIGN_SELECT = `
-  id,
-  name,
-  description,
-  owner_player_id,
-  created_at,
-  updated_at,
-  player_campaigns ( count )
-` as const;
+export const CAMPAIGN_BASE_SELECT =
+  "id, name, description, owner_player_id, created_at, updated_at" as const;
+
+export const CAMPAIGN_SELECT =
+  "id, name, description, owner_player_id, created_at, updated_at, player_campaigns ( count )" as const;

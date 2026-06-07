@@ -1,6 +1,7 @@
 import { createAuthedClient } from "@/lib/api/require-user";
 import { ApiError, jsonError, jsonOk } from "@/lib/api/errors";
-import { CAMPAIGN_SELECT, mapCampaignRow } from "@/lib/campaign/map-row";
+import { CAMPAIGN_BASE_SELECT, CAMPAIGN_SELECT, mapCampaignRow } from "@/lib/campaign/map-row";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   CAMPAIGN_NAME_MAX,
   CAMPAIGN_NAME_MIN,
@@ -31,7 +32,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { supabase, userId } = await createAuthedClient();
+    const { userId } = await createAuthedClient();
 
     let body: CreateCampaignPayload;
 
@@ -57,21 +58,25 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data, error } = await supabase
+    const admin = createAdminClient();
+    const { data, error } = await admin
       .from("campaigns")
       .insert({
         owner_player_id: userId,
         name,
         description,
       })
-      .select(CAMPAIGN_SELECT)
+      .select(CAMPAIGN_BASE_SELECT)
       .single();
 
     if (error) {
       return jsonError(error.message, 400);
     }
 
-    return jsonOk({ campaign: mapCampaignRow(data) }, 201);
+    return jsonOk(
+      { campaign: { ...mapCampaignRow(data), member_count: 0 } },
+      201,
+    );
   } catch (err) {
     const status = err instanceof ApiError ? err.status : 401;
     const message = err instanceof Error ? err.message : "Não autenticado.";
