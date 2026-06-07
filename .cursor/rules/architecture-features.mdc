@@ -1,0 +1,37 @@
+---
+description: Feature pattern — estrutura de pastas, SOLID e boundaries entre módulos
+alwaysApply: true
+---
+
+# Feature Pattern
+
+Organize por domínio vertical em `features/`, não por tipo técnico na raiz.
+
+## Estrutura
+
+```
+features/<nome>/
+  components/   # UI da feature
+  hooks/        # estado e efeitos
+  services/     # fetch → /api (sem Supabase direto)
+  types/        # tipos locais
+  index.ts      # API pública da feature
+components/ui/  # design system (Button, Sheet, Dice…)
+lib/            # supabase/server, api/errors
+types/          # database.types.ts (gerado)
+```
+
+## Regras
+
+- `app/` — rotas **finas**: só composição de features; sem lógica de negócio em `page.tsx`.
+- Importar outra feature **somente** via `features/<nome>/index.ts`.
+- Components dependem de hooks/services, **nunca** de `@supabase/supabase-js`.
+- Lógica RPC duplicada → `lib/api/` ou `features/shared/services/`.
+- Nova capacidade → nova feature; evite inflar features existentes (Open/Closed).
+
+## Exemplo
+
+```typescript
+// ❌ app/ficha/page.tsx com 200 linhas de lógica RPC
+// ✅ app/(game)/ficha/[id]/page.tsx importa { CharacterSheet } from '@/features/character-sheet'
+```

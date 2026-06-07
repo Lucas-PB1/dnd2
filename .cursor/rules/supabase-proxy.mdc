@@ -1,0 +1,47 @@
+---
+description: Proxy SSR — chaves server-only, Route Handlers e services client-safe
+globs: app/api/**,lib/**,features/**/services/**
+alwaysApply: false
+---
+
+# Supabase Proxy (Híbrido SSR)
+
+Chaves **nunca** no bundle do browser. Todo acesso a dados passa pelo servidor Next.js.
+
+## Variáveis (.env.local)
+
+```
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=   # só rotas admin internas
+```
+
+Sem prefixo `NEXT_PUBLIC_`. Ver `.env.example` e `../sql/DOC/11-integracao-dnd2024.md`.
+
+## Camadas
+
+| Camada | Onde | Faz |
+| --- | --- | --- |
+| Client | `features/*/services/` | `fetch('/api/...')` |
+| Proxy | `app/api/**/route.ts` | valida sessão, chama RPC |
+| Server | `lib/supabase/server.ts` | `createServerClient` (@supabase/ssr) |
+
+Auth: cookies httpOnly via `@supabase/ssr` + `middleware.ts`.
+
+## Template Route Handler
+
+```typescript
+// app/api/characters/[id]/sheet/route.ts
+const supabase = await createServerClient();
+const { data, error } = await supabase.rpc('get_character_sheet', {
+  p_character_id: Number(params.id),
+});
+if (error) return Response.json({ error: error.message }, { status: 400 });
+return Response.json(data);
+```
+
+## Proibido
+
+- `@supabase/supabase-js` em components ou `"use client"` para dados
+- `SUPABASE_SERVICE_ROLE_KEY` fora de rotas admin
+- Expor chaves via `NEXT_PUBLIC_*`

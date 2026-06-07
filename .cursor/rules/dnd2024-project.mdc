@@ -1,0 +1,29 @@
+---
+description: Visão geral do projeto dnd2024 — stack, idioma e referências obrigatórias
+alwaysApply: true
+---
+
+# Projeto dnd2024
+
+App Next.js 16 para D&D 2024 SRD. Backend PostgreSQL/Supabase no repositório irmão `sql/`.
+
+## Antes de codar
+
+1. Ler `../sql/DOC/README.md` — base consolidada do banco.
+2. Integração app↔banco: `../sql/DOC/11-integracao-dnd2024.md`.
+3. RPCs e fluxos: `../sql/DOC/04-rpcs.md` · `../sql/DOC/07-fluxos-app.md` · `../sql/DOC/08-armadilhas.md`.
+4. Ler `AGENTS.md` — Next.js 16 tem breaking changes; consultar `node_modules/next/dist/docs/` antes de APIs novas.
+
+## Stack
+
+- Next.js 16 App Router · React 19 · TypeScript strict · Tailwind CSS 4 · pnpm
+- Alias `@/*` → raiz do projeto
+- Idioma da UI: **pt-BR** (`lang="pt-BR"` no layout)
+
+## Princípio central
+
+A **app rola o d20**; o banco **persiste estado** e devolve **contexto mecânico**.
+
+## Comunicação
+
+Responder em **português** quando o usuário escrever em português.

@@ -1,0 +1,51 @@
+---
+description: Regras de domínio D&D 2024 — RPCs, fluxos e modelo de dados da app
+globs: features/**,types/**
+alwaysApply: false
+---
+
+# Domínio D&D 2024
+
+Contrato completo: `../sql/DOC/04-rpcs.md` · Modelo: `../sql/DOC/03-modelo-dados.md` · Itens: `../sql/DOC/10-itens-magicos.md`.
+
+## Separação ficha vs rolagem
+
+| RPC | Uso |
+| --- | --- |
+| `get_character_sheet` | UI da ficha (sem slots/resources) |
+| `get_character_roll_context` | Combate/perícias (modifiers, weapons, slots, resources) |
+
+## Fluxos obrigatórios
+
+```
+Equipar  → set_inventory_equipped → sync_character_resources → re-fetch
+Poção    → consume_inventory_item → re-fetch active_effects + inventory
+Combate  → roll_context → rolar no client → adjust_character_hp / spend_*
+Criar PC → catálogo Tier 2 → create_character(payload)
+Descanso → take_short_rest / take_long_rest
+```
+
+## Modelo mental
+
+- **Background** não tem traits → concede **Origin Feat** via `backgrounds.origin_feat_id`.
+- Traits ativas: species, class, subclass, item, feat — hub em `active_effects` JSON.
+- Recursos de item: `item-charges`, `item-spell-charges`, `item-enspelled-charges`.
+- Catálogo: read-only, cacheável (views Tier 2). Sessão: mutações só via RPCs.
+
+## Payload mínimo create_character
+
+```json
+{
+  "name": "Aldric",
+  "species_id": 1,
+  "background_id": 1,
+  "classes": [{ "class_id": 1, "class_level": 1 }],
+  "abilities": { "STR": 16, "DEX": 12, "CON": 14, "INT": 10, "WIS": 13, "CHA": 8 }
+}
+```
+
+## Armadilhas
+
+1. Sempre `sync_character_resources` após equipar.
+2. Cargas por `trait_id`, não por cópia no inventário.
+3. Nunca criar RPC de rolagem no SQL.

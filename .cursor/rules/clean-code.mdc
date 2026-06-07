@@ -1,0 +1,42 @@
+---
+description: Clean Code, SOLID e DRY — padrões TypeScript do projeto
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Clean Code · SOLID · DRY
+
+## Nomes e funções
+
+- Nomes revelam intenção: `getCharacterSheet`, não `fetchData`.
+- Funções pequenas, uma responsabilidade; early return para reduzir aninhamento.
+- Sem `any`; preferir tipos de `types/database.types.ts` ou `features/*/types/`.
+
+## Sem magic numbers
+
+```typescript
+// ❌ if (level >= 17)
+// ✅ if (level >= LEGENDARY_ACTION_LEVEL)
+const LEGENDARY_ACTION_LEVEL = 17;
+const TOUCH_TARGET_MIN_PX = 44;
+```
+
+## Erros
+
+- Classes de erro tipadas em `lib/api/errors.ts` (ex.: `SheetFetchError`).
+- Nunca `catch (e) {}` vazio; log + re-throw ou retorno de erro na UI.
+
+## SOLID na prática
+
+- **S** — service faz uma RPC; component renderiza.
+- **O** — estender via nova feature, não editar internals alheios.
+- **D** — UI depende de hooks/services, não de Supabase.
+
+## DRY
+
+- RPC repetida → extrair para `lib/api/` ou `features/shared/services/`.
+- Tipos compartilhados em `types/`, não copiados entre features.
+
+## Comentários
+
+Só para regras D&D não óbvias ou decisões de arquitetura. Código deve ser autoexplicativo.

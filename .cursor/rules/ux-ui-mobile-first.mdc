@@ -1,0 +1,37 @@
+---
+description: UX/UI de alto nível — mobile-first, a11y e estados de interface
+globs: **/*.{tsx,css}
+alwaysApply: false
+---
+
+# UX/UI · Mobile First · A11y
+
+## Mobile first
+
+- Estilos base para viewport pequeno; media queries com `min-width` para tablet/desktop.
+- Touch targets ≥ **44px**; espaçamento generoso em botões de combate/dados.
+- Ficha e combate legíveis com uma mão (prioridade mobile na mesa).
+
+## Hierarquia visual
+
+- HP, CA e iniciativa sempre visíveis no topo da ficha/combate.
+- Ações frequentes (ataque, perícia, descanso) acessíveis sem scroll excessivo.
+- Tema escuro confortável para sessões longas; contraste WCAG AA mínimo.
+
+## Estados obrigatórios
+
+Toda tela com dados remotos deve ter:
+- **Loading** — skeleton ou spinner contextual
+- **Empty** — mensagem + ação (ex.: "Nenhum personagem" → criar)
+- **Error** — mensagem clara + retry
+
+## Acessibilidade (WCAG)
+
+- HTML semântico: `<main>`, `<nav>`, headings em ordem, `<button>` para ações.
+- `<label>` em todo campo; `placeholder` não substitui label.
+- Modais: foco preso, `aria-modal`, `aria-labelledby`, fechar com Esc.
+- Botões só com ícone: `aria-label` descritivo; decoração com `aria-hidden`.
+
+## Rolagem de dados
+
+Feedback imediato (animação sutil + resultado legível); não bloquear UI durante fetch de contexto.

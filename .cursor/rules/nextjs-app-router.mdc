@@ -1,0 +1,41 @@
+---
+description: Next.js 16 App Router — Server/Client Components e convenções de rotas
+globs: app/**
+alwaysApply: false
+---
+
+# Next.js 16 App Router
+
+**Atenção:** Next.js 16 ≠ versões anteriores. Ler `node_modules/next/dist/docs/` e `AGENTS.md` antes de APIs novas.
+
+## Server vs Client
+
+- **Default:** Server Components — fetch de dados, layout, páginas estáticas.
+- `"use client"` **somente** quando necessário: event handlers, hooks React, estado local, rolagem de dados.
+- Data fetching de Supabase: **sempre** no servidor (Route Handlers ou Server Components via `lib/supabase/server.ts`).
+
+## Rotas
+
+```
+app/
+  (auth)/          # login, signup
+  (game)/          # ficha, combate, campanha
+  api/             # proxy Supabase
+  layout.tsx       # lang="pt-BR", fonts, metadata
+```
+
+- Páginas finas: importam de `features/`, não implementam lógica RPC.
+- Colocation: loading.tsx, error.tsx por segmento quando fizer sentido.
+
+## Exemplo
+
+```tsx
+// ✅ Server Component — composição
+import { CharacterSheet } from '@/features/character-sheet';
+
+export default async function FichaPage({ params }: { params: { id: string } }) {
+  return <CharacterSheet characterId={Number(params.id)} />;
+}
+
+// ❌ "use client" na page só para chamar supabase.rpc direto
+```
