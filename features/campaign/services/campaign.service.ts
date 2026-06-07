@@ -1,9 +1,11 @@
 import type {
   Campaign,
   CampaignDetail,
-  CampaignErrorResponse,
   CampaignListResponse,
+  CampaignMember,
+  CampaignMembersResponse,
   CreateCampaignPayload,
+  InviteMemberPayload,
 } from "@/features/campaign/types/campaign.types";
 
 async function parseResponse<T>(response: Response): Promise<T> {
@@ -13,8 +15,8 @@ async function parseResponse<T>(response: Response): Promise<T> {
       typeof data === "object" &&
       data !== null &&
       "error" in data &&
-      typeof (data as CampaignErrorResponse).error === "string"
-        ? (data as CampaignErrorResponse).error
+      typeof (data as { error: string }).error === "string"
+        ? (data as { error: string }).error
         : "Ocorreu um erro. Tente novamente.";
     throw new Error(message);
   }
@@ -46,4 +48,37 @@ export async function createCampaign(
   });
   const data = await parseResponse<{ campaign: Campaign }>(response);
   return data.campaign;
+}
+
+export async function fetchCampaignMembers(
+  campaignId: number,
+): Promise<CampaignMember[]> {
+  const response = await fetch(`/api/campaigns/${campaignId}/members`, fetchOptions);
+  const data = await parseResponse<CampaignMembersResponse>(response);
+  return data.members;
+}
+
+export async function inviteCampaignMember(
+  campaignId: number,
+  payload: InviteMemberPayload,
+): Promise<CampaignMember> {
+  const response = await fetch(`/api/campaigns/${campaignId}/members`, {
+    ...fetchOptions,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await parseResponse<{ member: CampaignMember }>(response);
+  return data.member;
+}
+
+export async function removeCampaignMember(
+  campaignId: number,
+  playerId: string,
+): Promise<void> {
+  const response = await fetch(
+    `/api/campaigns/${campaignId}/members/${playerId}`,
+    { ...fetchOptions, method: "DELETE" },
+  );
+  await parseResponse<{ ok: boolean }>(response);
 }

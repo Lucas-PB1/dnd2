@@ -45,6 +45,7 @@ export default async function CampanhaDetailPage({ params }: PageProps) {
         ...campaign,
         is_owner: campaign.owner_player_id === claimsData.claims.sub,
       }}
+      currentUserId={claimsData.claims.sub}
     />
   );
 }

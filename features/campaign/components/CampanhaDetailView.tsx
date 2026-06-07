@@ -2,13 +2,18 @@
 
 import Link from "next/link";
 import { FadeIn } from "@/components/motion";
+import { CampaignMembersPanel } from "@/features/campaign/components/CampaignMembersPanel";
 import type { CampaignDetail } from "@/features/campaign/types/campaign.types";
 
 type CampanhaDetailViewProps = {
   campaign: CampaignDetail;
+  currentUserId: string;
 };
 
-export function CampanhaDetailView({ campaign }: CampanhaDetailViewProps) {
+export function CampanhaDetailView({
+  campaign,
+  currentUserId,
+}: CampanhaDetailViewProps) {
   return (
     <article aria-labelledby="campaign-detail-heading">
       <FadeIn>
@@ -44,19 +49,19 @@ export function CampanhaDetailView({ campaign }: CampanhaDetailViewProps) {
         </FadeIn>
       ) : null}
 
-      <FadeIn delay={0.18} className="mt-10">
-        <div className="rounded-2xl border border-border bg-surface/40 p-6">
-          <h2 className="font-medium text-brand-soft">Próximos passos</h2>
-          <ul className="mt-3 space-y-2 text-sm text-muted">
-            <li>Convidar jogadores para a mesa</li>
+      <CampaignMembersPanel
+        campaignId={campaign.id}
+        isOwner={campaign.is_owner}
+        currentUserId={currentUserId}
+      />
+
+      <FadeIn delay={0.24} className="mt-6">
+        <div className="rounded-2xl border border-dashed border-border-strong bg-surface/20 p-6">
+          <h2 className="text-sm font-medium text-muted">Em breve</h2>
+          <ul className="mt-2 space-y-1 text-sm text-muted-subtle">
             <li>Vincular fichas de personagem à campanha</li>
             <li>Iniciar combates e sessões</li>
           </ul>
-          <p className="mt-4 text-xs text-muted-subtle">
-            {campaign.member_count}{" "}
-            {campaign.member_count === 1 ? "membro vinculado" : "membros vinculados"} ·
-            em breve: gestão de membros e personagens
-          </p>
         </div>
       </FadeIn>
     </article>

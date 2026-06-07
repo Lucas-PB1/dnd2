@@ -40,11 +40,16 @@ export async function createAuthedClient() {
         autoRefreshToken: false,
         detectSessionInUrl: false,
       },
+      global: {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
       accessToken: async () => accessToken,
     },
   );
 
-  return { supabase, userId: user.id };
+  return { supabase, userId: user.id, accessToken };
 }
 
 export async function requireUserId(): Promise<string> {
