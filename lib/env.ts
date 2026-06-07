@@ -10,8 +10,8 @@ export function getSupabaseUrl(): string {
   return requireEnv("SUPABASE_URL");
 }
 
-export function getSupabaseAnonKey(): string {
-  return requireEnv("SUPABASE_ANON_KEY");
+export function getSupabasePublishableKey(): string {
+  return requireEnv("SUPABASE_PUBLISHABLE_KEY");
 }
 
 export function getSiteUrl(): string {

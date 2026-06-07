@@ -12,8 +12,8 @@ Chaves **nunca** no bundle do browser. Todo acesso a dados passa pelo servidor N
 
 ```
 SUPABASE_URL=
-SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=   # só rotas admin internas
+SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_SECRET_KEY=   # só rotas admin internas
 ```
 
 Sem prefixo `NEXT_PUBLIC_`. Ver `.env.example` e `../sql/DOC/11-integracao-dnd2024.md`.
@@ -43,5 +43,5 @@ return Response.json(data);
 ## Proibido
 
 - `@supabase/supabase-js` em components ou `"use client"` para dados
-- `SUPABASE_SERVICE_ROLE_KEY` fora de rotas admin
+- `SUPABASE_SECRET_KEY` fora de rotas admin
 - Expor chaves via `NEXT_PUBLIC_*`

@@ -13,12 +13,12 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-amber-600 text-stone-950 hover:bg-amber-500 disabled:bg-amber-900/50 disabled:text-stone-500",
+    "bg-brand text-on-brand hover:bg-brand-hover disabled:bg-brand-muted/50 disabled:text-muted-subtle",
   secondary:
-    "border border-amber-700/40 bg-stone-900/60 text-amber-100 hover:border-amber-500/60 hover:bg-stone-900",
-  ghost: "text-amber-200/80 hover:bg-stone-800/60 hover:text-amber-100",
+    "border border-border-strong bg-surface/60 text-brand-soft hover:border-brand/60 hover:bg-surface",
+  ghost: "text-brand-soft/80 hover:bg-surface-elevated/60 hover:text-brand-soft",
   google:
-    "border border-stone-600/50 bg-stone-900/80 text-stone-100 hover:border-stone-400/50 hover:bg-stone-800",
+    "border border-border bg-surface/80 text-foreground hover:border-muted hover:bg-surface-elevated",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -42,7 +42,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     <button
       ref={ref}
       disabled={disabled || loading}
-      className={`inline-flex w-full items-center justify-center gap-2 rounded-lg font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500 disabled:cursor-not-allowed ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      className={`inline-flex w-full items-center justify-center gap-2 rounded-lg font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
       {...props}
     >
       {loading ? (

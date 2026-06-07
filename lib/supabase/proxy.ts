@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/env";
+import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/env";
 
 const AUTH_PATHS = ["/entrar"];
 const PROTECTED_PREFIXES = ["/campanha", "/ficha", "/combate"];
@@ -20,7 +20,7 @@ function isProtectedPath(pathname: string): boolean {
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
-  const supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
+  const supabase = createServerClient(getSupabaseUrl(), getSupabasePublishableKey(), {
     cookies: {
       getAll() {
         return request.cookies.getAll();

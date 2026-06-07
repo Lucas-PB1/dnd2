@@ -1,10 +1,12 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
+import { motion } from "motion/react";
 import { AuthAlert, AuthCard } from "@/features/auth/components/AuthCard";
 import { Button } from "@/components/ui/Button";
 import { startGoogleLogin } from "@/features/auth/services/auth.service";
 import { translateAuthError } from "@/features/auth/types/auth.types";
+import { FadeIn } from "@/components/motion";
 
 function GoogleIcon() {
   return (
@@ -42,15 +44,19 @@ export function GoogleSignInForm() {
       <div className="space-y-4">
         {urlError ? <AuthAlert variant="error" message={urlError} /> : null}
 
-        <Button
-          type="button"
-          variant="google"
-          onClick={() => startGoogleLogin(next)}
-          aria-label="Continuar com Google"
-        >
-          <GoogleIcon />
-          Continuar com Google
-        </Button>
+        <FadeIn delay={0.2}>
+          <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
+            <Button
+              type="button"
+              variant="google"
+              onClick={() => startGoogleLogin(next)}
+              aria-label="Continuar com Google"
+            >
+              <GoogleIcon />
+              Continuar com Google
+            </Button>
+          </motion.div>
+        </FadeIn>
       </div>
     </AuthCard>
   );
