@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/env";
 
-const AUTH_PATHS = ["/entrar", "/cadastro", "/recuperar-senha", "/redefinir-senha"];
+const AUTH_PATHS = ["/entrar"];
 const PROTECTED_PREFIXES = ["/campanha", "/ficha", "/combate"];
 
 function isAuthPath(pathname: string): boolean {

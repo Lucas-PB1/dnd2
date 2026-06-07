@@ -21,18 +21,12 @@ export default async function HomePage() {
         <span className="font-serif text-xl font-semibold text-amber-100">
           D&amp;D 2024
         </span>
-        <nav aria-label="Principal" className="flex items-center gap-3">
+        <nav aria-label="Principal">
           <Link
             href="/entrar"
-            className="min-h-11 rounded-lg px-4 py-2 text-sm text-amber-200/90 hover:text-amber-100"
-          >
-            Entrar
-          </Link>
-          <Link
-            href="/cadastro"
             className="inline-flex min-h-11 items-center justify-center rounded-lg bg-amber-600 px-5 text-sm font-medium text-stone-950 transition-colors hover:bg-amber-500"
           >
-            Criar conta
+            Entrar com Google
           </Link>
         </nav>
       </header>
@@ -46,33 +40,23 @@ export default async function HomePage() {
         </h1>
         <p className="mt-6 max-w-xl text-lg leading-relaxed text-stone-400">
           Fichas de personagem, combate e campanhas para Dungeons &amp; Dragons
-          2024 — com autenticação segura via Supabase.
+          2024 — entre com sua conta Google.
         </p>
 
-        <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="mt-10">
           <Link
-            href="/cadastro"
-            className="inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-amber-600 px-5 font-medium text-stone-950 transition-colors hover:bg-amber-500 sm:w-auto"
+            href="/entrar"
+            className="inline-flex min-h-12 items-center justify-center rounded-lg bg-amber-600 px-6 font-medium text-stone-950 transition-colors hover:bg-amber-500"
           >
             Começar aventura
           </Link>
-          <Link
-            href="/entrar"
-            className="inline-flex min-h-12 w-full items-center justify-center rounded-lg border border-amber-700/40 bg-stone-900/60 px-5 font-medium text-amber-100 transition-colors hover:border-amber-500/60 hover:bg-stone-900 sm:w-auto"
-          >
-            Já tenho conta
-          </Link>
         </div>
 
-        <ul className="mt-16 grid gap-4 sm:grid-cols-3">
+        <ul className="mt-16 grid gap-4 sm:grid-cols-2">
           {[
             {
-              title: "E-mail e senha",
-              text: "Cadastro clássico com confirmação por e-mail.",
-            },
-            {
               title: "Google",
-              text: "Entre com um clique usando sua conta Google.",
+              text: "Login com um clique — sem senha para lembrar.",
             },
             {
               title: "Sessão segura",
