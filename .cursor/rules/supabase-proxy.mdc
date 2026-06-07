@@ -16,7 +16,7 @@ SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SECRET_KEY=   # só rotas admin internas
 ```
 
-Sem prefixo `NEXT_PUBLIC_`. Ver `.env.example` e `../sql/DOC/11-integracao-dnd2024.md`.
+Sem prefixo `NEXT_PUBLIC_`. Ver `.env.example` e `database/README.md`.
 
 ## Camadas
 

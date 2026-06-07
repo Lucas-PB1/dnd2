@@ -5,14 +5,13 @@ alwaysApply: true
 
 # Projeto dnd2024
 
-App Next.js 16 para D&D 2024 SRD. Backend PostgreSQL/Supabase no repositório irmão `sql/`.
+App Next.js 16 para D&D 2024 SRD. Backend PostgreSQL/Supabase em `database/`.
 
 ## Antes de codar
 
-1. Ler `../sql/DOC/README.md` — base consolidada do banco.
-2. Integração app↔banco: `../sql/DOC/11-integracao-dnd2024.md`.
-3. RPCs e fluxos: `../sql/DOC/04-rpcs.md` · `../sql/DOC/07-fluxos-app.md` · `../sql/DOC/08-armadilhas.md`.
-4. Ler `AGENTS.md` — Next.js 16 tem breaking changes; consultar `node_modules/next/dist/docs/` antes de APIs novas.
+1. Ler `database/README.md` — ordem de migrations e seeds.
+2. Mapa do schema: `database/docs/schema.md`.
+3. Ler `AGENTS.md` — Next.js 16 tem breaking changes; consultar `node_modules/next/dist/docs/` antes de APIs novas.
 
 ## Stack
 
