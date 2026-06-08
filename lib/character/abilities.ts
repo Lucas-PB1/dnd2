@@ -2,6 +2,7 @@ import type {
   AbilityKey,
   BackgroundAsiSelection,
   AbilityAssignment,
+  RollSlotAssignment,
 } from "@/features/character/types/builder.types";
 import { ABILITY_KEYS } from "@/features/character/types/builder.types";
 import {
@@ -31,6 +32,17 @@ export function abilityModifier(score: number): number {
 }
 
 export function emptyAbilityAssignment(): AbilityAssignment {
+  return {
+    STR: null,
+    DEX: null,
+    CON: null,
+    INT: null,
+    WIS: null,
+    CHA: null,
+  };
+}
+
+export function emptyRollSlotAssignment(): RollSlotAssignment {
   return {
     STR: null,
     DEX: null,

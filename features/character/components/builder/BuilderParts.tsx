@@ -1,12 +1,46 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
+import { BuilderInfoButton } from "@/features/character/components/builder/BuilderInfoButton";
 import { BUILDER_STEPS } from "@/features/character/types/builder.types";
+
+const focusRingClass =
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
+
+function CardSelectSurface({
+  onClick,
+  className = "",
+  children,
+}: {
+  onClick: () => void;
+  className?: string;
+  children: ReactNode;
+}) {
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onClick();
+    }
+  };
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+      className={`cursor-pointer ${focusRingClass} ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
 
 type BuilderStepperProps = {
   currentStep: number;
 };
 
+/** @deprecated Prefer BuilderStepNav inside BuilderShell */
 export function BuilderStepper({ currentStep }: BuilderStepperProps) {
   return (
     <nav aria-label="Progresso da criação" className="mb-8">
@@ -60,12 +94,20 @@ export function BuilderStepper({ currentStep }: BuilderStepperProps) {
   );
 }
 
+export type SelectionFact = {
+  label: string;
+  value: string;
+};
+
 type SelectionCardProps = {
   title: string;
   description?: string | null;
   selected?: boolean;
   onSelect: () => void;
   meta?: ReactNode;
+  compact?: boolean;
+  facts?: SelectionFact[];
+  onInfo?: () => void;
 };
 
 export function SelectionCard({
@@ -74,32 +116,101 @@ export function SelectionCard({
   selected,
   onSelect,
   meta,
+  compact = false,
+  facts,
+  onInfo,
 }: SelectionCardProps) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={`w-full rounded-xl border p-4 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
-        selected
-          ? "border-brand bg-brand/10"
-          : "border-border bg-surface/40 hover:border-brand/40 hover:bg-surface/70"
-      }`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-medium text-foreground">{title}</p>
-          {description ? (
-            <p className="mt-1 line-clamp-3 text-sm text-muted">{description}</p>
-          ) : null}
-        </div>
+  const shellClass = `w-full rounded-xl border text-left transition-colors ${
+    compact ? "p-3" : "p-4"
+  } ${
+    selected
+      ? "border-brand bg-brand/10"
+      : "border-border bg-surface/40 hover:border-brand/40 hover:bg-surface/70"
+  }`;
+
+  const body = (
+    <>
+      <div className="flex items-start justify-between gap-2">
+        <p
+          className={`font-medium text-foreground ${compact ? "text-base" : ""}`}
+        >
+          {title}
+        </p>
         {selected ? (
-          <span className="shrink-0 rounded-full bg-brand px-2 py-0.5 text-xs font-medium text-on-brand">
-            Selecionado
+          <span className="shrink-0 rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-medium text-on-brand">
+            ✓
           </span>
         ) : null}
       </div>
-      {meta ? <div className="mt-3 text-xs text-muted-subtle">{meta}</div> : null}
-    </button>
+      {description ? (
+        <p
+          className={`mt-0.5 text-muted ${compact ? "line-clamp-1 text-sm" : "line-clamp-2 text-sm"}`}
+        >
+          {description}
+        </p>
+      ) : null}
+    </>
+  );
+
+  if (onInfo) {
+    return (
+      <div className={shellClass}>
+        <div className="flex items-start gap-2">
+          <CardSelectSurface onClick={onSelect} className="min-w-0 flex-1 text-left">
+            {body}
+          </CardSelectSurface>
+          <BuilderInfoButton label={title} onClick={onInfo} />
+        </div>
+
+        {facts && facts.length > 0 ? (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {facts.map((fact) => (
+              <span
+                key={`${fact.label}-${fact.value}`}
+                className="rounded-md bg-surface-elevated/80 px-2 py-0.5 text-xs text-muted-subtle"
+              >
+                <span className="text-muted">{fact.label}:</span> {fact.value}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        {meta ? (
+          <div
+            className={`text-muted-subtle ${compact ? "mt-1.5 text-[10px]" : "mt-3 text-xs"}`}
+          >
+            {meta}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <CardSelectSurface onClick={onSelect} className={shellClass}>
+      {body}
+
+      {facts && facts.length > 0 ? (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {facts.map((fact) => (
+            <span
+              key={`${fact.label}-${fact.value}`}
+              className="rounded-md bg-surface-elevated/80 px-2 py-0.5 text-xs text-muted-subtle"
+            >
+              <span className="text-muted">{fact.label}:</span> {fact.value}
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      {meta ? (
+        <div
+          className={`text-muted-subtle ${compact ? "mt-1.5 text-[10px]" : "mt-3 text-xs"}`}
+        >
+          {meta}
+        </div>
+      ) : null}
+    </CardSelectSurface>
   );
 }
 
@@ -107,28 +218,135 @@ type ChipToggleProps = {
   label: string;
   selected: boolean;
   disabled?: boolean;
+  size?: "sm" | "md";
   onToggle: () => void;
+  onInfo?: () => void;
 };
+
+const chipSizeClasses = {
+  sm: "rounded-md border px-2 py-1 text-sm",
+  md: "rounded-lg border px-3 py-2 text-sm",
+} as const;
 
 export function ChipToggle({
   label,
   selected,
   disabled,
+  size = "md",
   onToggle,
+  onInfo,
 }: ChipToggleProps) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onToggle}
-      className={`rounded-lg border px-3 py-1.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-40 ${
-        selected
-          ? "border-brand bg-brand/15 text-brand-soft"
-          : "border-border text-muted hover:border-brand/40 hover:text-foreground"
-      }`}
+  const sizeClass = chipSizeClasses[size];
+  const widthClass = size === "sm" ? "w-full min-w-0" : "";
+  const stateClass = selected
+    ? "border-brand bg-brand/15 text-brand-soft"
+    : "border-border text-muted hover:border-brand/40 hover:text-foreground";
+  const baseClass = `${sizeClass} ${widthClass} transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-40`;
+
+  const handleChipKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (disabled) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onToggle();
+    }
+  };
+
+  const chip = (
+    <div
+      role="button"
+      tabIndex={disabled ? -1 : 0}
+      aria-pressed={selected}
+      aria-disabled={disabled || undefined}
+      onClick={() => {
+        if (!disabled) onToggle();
+      }}
+      onKeyDown={handleChipKeyDown}
+      className={`${baseClass} ${stateClass} ${disabled ? "" : "cursor-pointer"} ${focusRingClass}`}
     >
       {label}
-    </button>
+    </div>
+  );
+
+  if (onInfo) {
+    return (
+      <span className="inline-flex items-center gap-0.5">
+        {chip}
+        <BuilderInfoButton label={label} onClick={onInfo} />
+      </span>
+    );
+  }
+
+  return chip;
+}
+
+type BuilderSectionTabsProps = {
+  tabs: { id: string; label: string; badge?: string }[];
+  activeId: string;
+  onChange: (id: string) => void;
+};
+
+export function BuilderSectionTabs({
+  tabs,
+  activeId,
+  onChange,
+}: BuilderSectionTabsProps) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Seções de escolha"
+      className="flex shrink-0 gap-1 overflow-x-auto border-b border-border pb-px"
+    >
+      {tabs.map((tab) => {
+        const active = tab.id === activeId;
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(tab.id)}
+            className={`shrink-0 rounded-t-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+              active
+                ? "border border-b-0 border-border bg-surface/60 text-foreground"
+                : "text-muted hover:text-foreground"
+            }`}
+          >
+            {tab.label}
+            {tab.badge ? (
+              <span className="ml-1.5 rounded-full bg-brand/15 px-1.5 py-0.5 text-[10px] text-brand">
+                {tab.badge}
+              </span>
+            ) : null}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+export function BuilderStepFrame({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
+      <header className="shrink-0 pb-3">
+        <h2 className="font-serif text-base font-semibold text-foreground">
+          {title}
+        </h2>
+        {hint ? (
+          <p className="mt-1 line-clamp-1 text-sm text-muted">{hint}</p>
+        ) : null}
+      </header>
+      <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain">
+        {children}
+      </div>
+    </div>
   );
 }
 

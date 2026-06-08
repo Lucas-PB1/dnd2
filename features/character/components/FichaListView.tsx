@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
 import { Button } from "@/components/ui/Button";
@@ -12,7 +13,8 @@ type FichaListViewProps = {
 
 export function FichaListView({ initialCharacters }: FichaListViewProps) {
   const router = useRouter();
-  const hasCharacters = initialCharacters.length > 0;
+  const [characters, setCharacters] = useState(initialCharacters);
+  const hasCharacters = characters.length > 0;
 
   return (
     <section aria-labelledby="ficha-heading">
@@ -43,10 +45,17 @@ export function FichaListView({ initialCharacters }: FichaListViewProps) {
       </FadeIn>
 
       {hasCharacters ? (
-        <Stagger className="mt-10 grid gap-4 sm:grid-cols-2">
-          {initialCharacters.map((character) => (
-            <StaggerItem key={character.id}>
-              <CharacterCard character={character} />
+        <Stagger className="mt-10 grid gap-5 sm:grid-cols-2 sm:gap-6">
+          {characters.map((character) => (
+            <StaggerItem key={character.id} className="h-full min-w-0">
+              <CharacterCard
+                character={character}
+                onDeleted={(characterId) =>
+                  setCharacters((prev) =>
+                    prev.filter((entry) => entry.id !== characterId),
+                  )
+                }
+              />
             </StaggerItem>
           ))}
         </Stagger>

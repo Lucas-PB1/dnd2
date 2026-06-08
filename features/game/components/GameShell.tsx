@@ -23,16 +23,27 @@ function navIsActive(pathname: string, href: string): boolean {
 
 export function GameShell({ email, children }: GameShellProps) {
   const pathname = usePathname();
+  const isCharacterBuilder = pathname.startsWith("/ficha/novo");
 
   return (
-    <div className="flex min-h-svh flex-1 flex-col">
+    <div
+      className={`flex flex-1 flex-col ${
+        isCharacterBuilder ? "h-svh overflow-hidden" : "min-h-svh"
+      }`}
+    >
       <motion.header
-        className="border-b border-border bg-background/80 backdrop-blur-sm"
+        className="shrink-0 border-b border-border bg-background/80 backdrop-blur-sm"
         initial="hidden"
         animate="visible"
         variants={headerEnter}
       >
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <div
+          className={`mx-auto flex flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 ${
+            isCharacterBuilder
+              ? "max-w-7xl 2xl:max-w-384"
+              : "max-w-5xl"
+          }`}
+        >
           <div className="flex flex-wrap items-center gap-6">
             <Link
               href="/campanha"
@@ -69,8 +80,22 @@ export function GameShell({ email, children }: GameShellProps) {
         </div>
       </motion.header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6">
-        <PageEnter>{children}</PageEnter>
+      <main
+        className={`mx-auto w-full flex-1 px-4 sm:px-6 ${
+          isCharacterBuilder
+            ? "flex min-h-0 max-w-7xl flex-col overflow-hidden py-4 2xl:max-w-384"
+            : "max-w-5xl py-8"
+        }`}
+      >
+        <PageEnter
+          className={
+            isCharacterBuilder
+              ? "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+              : undefined
+          }
+        >
+          {children}
+        </PageEnter>
       </main>
     </div>
   );

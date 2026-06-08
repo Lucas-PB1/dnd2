@@ -58,6 +58,33 @@ export type BuilderToolChoiceGroup = {
   options: BuilderToolOption[];
 };
 
+export type BuilderSpellOption = {
+  spell_id: number;
+  name: string;
+  level: number;
+  school: string | null;
+  requires_concentration: boolean;
+  requires_ritual: boolean;
+};
+
+export type BuilderClassSpellcasting = {
+  spellcasting_ability: string | null;
+  cantrip_count: number;
+  prepared_count: number;
+  spellbook_count: number;
+  uses_spellbook: boolean;
+  spells: BuilderSpellOption[];
+};
+
+export type BuilderExpertiseGroup = {
+  trait_id: number;
+  trait_name: string;
+  choice_count: number;
+  pool: "proficient" | "class_skills" | "fixed";
+  fixed_skills: BuilderSkillOption[];
+  notes: string | null;
+};
+
 export type BuilderClassEntry = {
   id: number;
   name: string;
@@ -67,6 +94,8 @@ export type BuilderClassEntry = {
   armor: string[];
   skill_choices: BuilderSkillChoiceGroup[];
   tool_choices: BuilderToolChoiceGroup[];
+  spellcasting: BuilderClassSpellcasting | null;
+  expertise_choices: BuilderExpertiseGroup[];
 };
 
 export type BuilderSpeciesEntry = {
@@ -112,6 +141,37 @@ export type BuilderOriginFeatChoice = {
   options: BuilderTraitOption[];
 };
 
+export type BuilderFeatSpellGroup = {
+  trait_id: number;
+  choice_group: string;
+  choice_count: number;
+  spell_level: number;
+  always_prepared: boolean;
+  notes: string | null;
+};
+
+export type BuilderFeatSpellcasting = {
+  feat_id: number;
+  feat_name: string;
+  trait_id: number;
+  trait_name: string;
+  spell_list_option_group: string;
+  groups: BuilderFeatSpellGroup[];
+  spells_by_list: Record<string, BuilderSpellOption[]>;
+  spell_list_ids_by_name: Record<string, number>;
+};
+
+export type FeatSpellSource = "background" | "human";
+
+export type FeatSpellSelection = {
+  source: FeatSpellSource;
+  trait_id: number;
+  choice_group: string;
+  selection_key: string;
+  spell_level: number;
+  spell_id: number;
+};
+
 export type BuilderBackgroundEntry = {
   id: number;
   name: string;
@@ -124,6 +184,7 @@ export type BuilderBackgroundEntry = {
   tool_proficiency_options: BuilderBackgroundToolOption[];
   equipment_options: BuilderEquipmentOption[];
   origin_feat_choices: BuilderOriginFeatChoice[];
+  origin_feat_spellcasting: BuilderFeatSpellcasting | null;
 };
 
 export type BuilderOriginFeat = {
@@ -131,6 +192,8 @@ export type BuilderOriginFeat = {
   name: string;
   description: string | null;
   is_repeatable: boolean;
+  origin_feat_choices: BuilderOriginFeatChoice[];
+  spellcasting: BuilderFeatSpellcasting | null;
 };
 
 export type CharacterBuilderSummary = {
@@ -146,6 +209,8 @@ export type BuilderClassSummaryEntry = {
   saving_throws: string[];
   weapons: string[];
   armor: string[];
+  spellcasting?: BuilderClassSpellcasting | null;
+  expertise_choices?: BuilderExpertiseGroup[];
 };
 
 export type BuilderSpeciesSummaryEntry = {
@@ -177,6 +242,9 @@ export type CharacterBuilderData = {
 
 export type AbilityAssignment = Record<AbilityKey, number | null>;
 
+/** Índice do dado rolado atribuído a cada atributo (somente método roll). */
+export type RollSlotAssignment = Record<AbilityKey, number | null>;
+
 export type BackgroundAsiSelection = {
   mode: BackgroundAsiMode;
   plus2: AbilityKey | null;
@@ -205,6 +273,7 @@ export type CharacterBuilderState = {
   step: number;
   ability_method: AbilityMethod;
   ability_assignment: AbilityAssignment;
+  roll_slot_assignment: RollSlotAssignment;
   roll_sets: number[][];
   selected_roll_index: number | null;
   species_id: number | null;
@@ -217,7 +286,14 @@ export type CharacterBuilderState = {
   species_trait_options: TraitOptionSelection[];
   origin_feat_trait_options: TraitOptionSelection[];
   human_origin_feat_id: number | null;
+  human_origin_feat_trait_options: TraitOptionSelection[];
   equipment_option_key: string | null;
+  cantrip_spell_ids: number[];
+  feat_spell_selections: FeatSpellSelection[];
+  spellbook_spell_ids: number[];
+  prepared_spell_ids: number[];
+  /** trait_id → skill_ids com expertise */
+  expertise_by_trait: Record<number, number[]>;
   size: string | null;
   name: string;
 };
@@ -235,11 +311,29 @@ export type CreateCharacterBuilderPayload = {
   trait_options: TraitOptionSelection[];
   feats: { feat_id: number; source_type: string; source_id: number; selection_key?: string }[];
   inventory: { item_id: number; quantity: number; is_equipped?: boolean }[];
+  spells: {
+    spell_id: number;
+    source_type: string;
+    is_prepared: boolean;
+    always_prepared?: boolean;
+  }[];
+  trait_spell_choices: {
+    trait_id: number;
+    choice_group: string;
+    selection_key: string;
+    spell_level: number;
+    spell_id: number;
+    trait_option_id?: number;
+    spell_list_id?: number;
+    source_type: string;
+    source_id: number;
+  }[];
 };
 
 export const BUILDER_STEPS = [
   { id: "abilities", title: "Atributos", subtitle: "Método e valores base" },
-  { id: "origin", title: "Origem", subtitle: "Espécie, antecedente e bônus" },
+  { id: "species", title: "Espécie", subtitle: "Raça e tamanho" },
+  { id: "background", title: "Antecedente", subtitle: "História e bônus" },
   { id: "class", title: "Classe", subtitle: "Nível 1" },
   { id: "choices", title: "Escolhas", subtitle: "Perícias, traços e equipamento" },
   { id: "details", title: "Detalhes", subtitle: "Nome e revisão" },

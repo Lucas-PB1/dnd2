@@ -15,6 +15,8 @@ function stubClass(
     ...entry,
     skill_choices: [],
     tool_choices: [],
+    spellcasting: entry.spellcasting ?? null,
+    expertise_choices: entry.expertise_choices ?? [],
   };
 }
 
@@ -42,6 +44,7 @@ function stubBackground(
     tool_proficiency_options: [],
     equipment_options: [],
     origin_feat_choices: [],
+    origin_feat_spellcasting: null,
   };
 }
 

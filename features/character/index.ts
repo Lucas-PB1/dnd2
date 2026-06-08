@@ -23,4 +23,5 @@ export {
   fetchCharacterBuilderData,
   createCharacter,
   createCharacterFromBuilder,
+  deleteCharacter,
 } from "./services/character.service";

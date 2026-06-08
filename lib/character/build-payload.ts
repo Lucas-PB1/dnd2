@@ -13,6 +13,19 @@ import type {
 } from "@/features/character/types/builder.types";
 import { ABILITY_KEYS } from "@/features/character/types/builder.types";
 import { CHARACTER_NAME_MIN } from "@/features/character/types/character.types";
+import {
+  buildSkillsPayloadWithExpertise,
+  validateExpertiseSelections,
+} from "@/lib/character/class-expertise";
+import {
+  buildSpellsRpcPayload,
+  classRequiresSpellSelection,
+  validateSpellSelections,
+} from "@/lib/character/class-spells";
+import {
+  buildFeatSpellsRpcPayload,
+  validateFeatSpellSelections,
+} from "@/lib/character/feat-spells";
 import { mergeOriginFeatTraitOptions } from "@/lib/character/origin-feat";
 
 export function buildRpcPayloadFromBuilderState(
@@ -127,6 +140,26 @@ export function buildRpcPayloadFromBuilderState(
     );
   }
 
+  if (state.human_origin_feat_id) {
+    const humanFeat = data.origin_feats.find(
+      (entry) => entry.id === state.human_origin_feat_id,
+    );
+    for (const group of humanFeat?.origin_feat_choices ?? []) {
+      const selected = state.human_origin_feat_trait_options.filter(
+        (opt) =>
+          opt.trait_id === group.trait_id &&
+          opt.option_group === group.option_group,
+      );
+      if (selected.length !== group.choice_count) {
+        throw new ApiError(
+          `Complete as escolhas do feat Versátil: ${group.trait_name}.`,
+          400,
+        );
+      }
+      trait_options.push(...selected);
+    }
+  }
+
   const feats: CreateCharacterBuilderPayload["feats"] = [];
   if (state.human_origin_feat_id) {
     feats.push({
@@ -195,11 +228,27 @@ export function buildRpcPayloadFromBuilderState(
     ...backgroundTools,
   ];
 
-  const skillsPayload = state.class_skill_ids.map((skill_id) => ({
-    skill_id,
-    is_proficient: true,
-    has_expertise: false,
-  }));
+  const expertiseError = validateExpertiseSelections(cls, data, state);
+  if (expertiseError) {
+    throw new ApiError(expertiseError, 400);
+  }
+
+  const skillsPayload = buildSkillsPayloadWithExpertise(data, state);
+
+  const spellError = validateSpellSelections(cls.spellcasting, state);
+  if (spellError) {
+    throw new ApiError(spellError, 400);
+  }
+
+  const featSpellError = validateFeatSpellSelections(data, state);
+  if (featSpellError) {
+    throw new ApiError(featSpellError, 400);
+  }
+
+  const spells = classRequiresSpellSelection(cls.spellcasting)
+    ? buildSpellsRpcPayload(state)
+    : [];
+  const trait_spell_choices = buildFeatSpellsRpcPayload(data, state);
 
   const constitution = abilities.CON;
   const max_hp = computeLevel1Hp(cls.hit_die, constitution);
@@ -217,6 +266,8 @@ export function buildRpcPayloadFromBuilderState(
     trait_options,
     feats,
     inventory,
+    spells,
+    trait_spell_choices,
     _skillsPayload: skillsPayload,
   } as CreateCharacterBuilderPayload & { _skillsPayload: typeof skillsPayload };
 }
@@ -269,5 +320,17 @@ export function toCreateCharacterRpcBody(
       selection_key: feat.selection_key ?? null,
     })),
     inventory: payload.inventory,
+    spells: payload.spells,
+    trait_spell_choices: payload.trait_spell_choices.map((entry) => ({
+      trait_id: entry.trait_id,
+      choice_group: entry.choice_group,
+      selection_key: entry.selection_key,
+      spell_level: entry.spell_level,
+      spell_id: entry.spell_id,
+      trait_option_id: entry.trait_option_id ?? null,
+      spell_list_id: entry.spell_list_id ?? null,
+      source_type: entry.source_type,
+      source_id: entry.source_id,
+    })),
   };
 }

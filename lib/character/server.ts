@@ -42,3 +42,23 @@ export async function getCharacterForUser(
 
   return data ? mapCharacterRow(data as CharacterListRow) : null;
 }
+
+export async function deleteCharacterForUser(
+  characterId: number,
+  userId: string,
+): Promise<boolean> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("characters")
+    .delete()
+    .eq("id", characterId)
+    .eq("owner_player_id", userId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    throw new ApiError(error.message, 400);
+  }
+
+  return data !== null;
+}

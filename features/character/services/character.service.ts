@@ -109,3 +109,11 @@ export async function createCharacterFromBuilder(
   });
   return parseResponse<CreateCharacterResponse>(response);
 }
+
+export async function deleteCharacter(characterId: number): Promise<void> {
+  const response = await fetch(`/api/characters/${characterId}`, {
+    ...fetchOptions,
+    method: "DELETE",
+  });
+  await parseResponse<{ ok: boolean }>(response);
+}
