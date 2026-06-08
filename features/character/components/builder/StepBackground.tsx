@@ -7,13 +7,11 @@ import {
   BuilderStepFrame,
   ChipToggle,
   SelectionCard,
-  selectClassName,
 } from "@/features/character/components/builder/BuilderParts";
 import { BuilderDetailModal } from "@/features/character/components/builder/BuilderDetailModal";
 import { BackgroundDetailContent } from "@/features/character/components/builder/builder-detail-content";
 import {
   ABILITY_KEYS,
-  type AbilityKey,
   type BuilderBackgroundEntry,
   type CharacterBuilderData,
   type CharacterBuilderState,
@@ -125,53 +123,59 @@ export function StepBackground({ data, state, onChange }: StepBackgroundProps) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>+2</Label>
-                  <select
-                    value={state.background_asi.plus2 ?? ""}
-                    onChange={(e) =>
-                      onChange(
-                        updateBackgroundAsi(state, {
-                          plus2: (e.target.value as AbilityKey) || null,
-                        }),
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {background.ability_options
+                      .filter(
+                        (key) =>
+                          state.background_asi.plus2 === key ||
+                          key !== state.background_asi.plus1,
                       )
-                    }
-                    className={selectClassName}
-                  >
-                    <option value="">Selecione…</option>
-                    {background.ability_options.map((key) => (
-                      <option
-                        key={key}
-                        value={key}
-                        disabled={key === state.background_asi.plus1}
-                      >
-                        {ABILITY_LABELS[key]}
-                      </option>
-                    ))}
-                  </select>
+                      .map((key) => {
+                        const selected = state.background_asi.plus2 === key;
+                        return (
+                          <ChipToggle
+                            key={`plus2-${key}`}
+                            label={ABILITY_LABELS[key]}
+                            selected={selected}
+                            onToggle={() =>
+                              onChange(
+                                updateBackgroundAsi(state, {
+                                  plus2: selected ? null : key,
+                                }),
+                              )
+                            }
+                          />
+                        );
+                      })}
+                  </div>
                 </div>
                 <div>
                   <Label>+1</Label>
-                  <select
-                    value={state.background_asi.plus1 ?? ""}
-                    onChange={(e) =>
-                      onChange(
-                        updateBackgroundAsi(state, {
-                          plus1: (e.target.value as AbilityKey) || null,
-                        }),
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {background.ability_options
+                      .filter(
+                        (key) =>
+                          state.background_asi.plus1 === key ||
+                          key !== state.background_asi.plus2,
                       )
-                    }
-                    className={selectClassName}
-                  >
-                    <option value="">Selecione…</option>
-                    {background.ability_options.map((key) => (
-                      <option
-                        key={key}
-                        value={key}
-                        disabled={key === state.background_asi.plus2}
-                      >
-                        {ABILITY_LABELS[key]}
-                      </option>
-                    ))}
-                  </select>
+                      .map((key) => {
+                        const selected = state.background_asi.plus1 === key;
+                        return (
+                          <ChipToggle
+                            key={`plus1-${key}`}
+                            label={ABILITY_LABELS[key]}
+                            selected={selected}
+                            onToggle={() =>
+                              onChange(
+                                updateBackgroundAsi(state, {
+                                  plus1: selected ? null : key,
+                                }),
+                              )
+                            }
+                          />
+                        );
+                      })}
+                  </div>
                 </div>
               </div>
             ) : null}

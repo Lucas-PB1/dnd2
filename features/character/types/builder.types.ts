@@ -24,6 +24,7 @@ export type BuilderTraitOption = {
   name: string;
   description: string | null;
   option_group: string;
+  skill_id?: number | null;
 };
 
 export type BuilderTraitChoiceGroup = {

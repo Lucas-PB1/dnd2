@@ -55,6 +55,14 @@ import {
   totalFeatSpellChoicesRequired,
 } from "@/lib/character/feat-spells";
 import {
+  spellIdsTakenElsewhere,
+  skillIdsGrantedOutsideClass,
+  visibleHumanOriginFeats,
+  visibleSpells,
+  visibleTraitOptions,
+  visibleWhenTaken,
+} from "@/lib/character/builder-selection";
+import {
   findLockedOriginFeatSelection,
   getVisibleOriginFeatChoices,
   mergeOriginFeatTraitOptions,
@@ -215,6 +223,10 @@ function FeatSpellPicker({
               ? "Magia de nível 1 (sempre preparada)"
               : `Magias de talento (${group.choice_group})`;
 
+        const takenSpellIds = spellIdsTakenElsewhere(state, {
+          featSources: [source],
+        });
+
         return (
           <SpellPickerSection
             key={`${source}-${group.choice_group}`}
@@ -223,7 +235,7 @@ function FeatSpellPicker({
               group.notes ??
               `Escolha ${group.choice_count} magia(s) da lista ${listSelection.listName}`
             }
-            spells={spells}
+            spells={visibleSpells(spells, selectedIds, takenSpellIds)}
             selectedIds={selectedIds}
             max={group.choice_count}
             filter={filter}
@@ -390,8 +402,13 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
   }
 
   const skillGroups = cls.skill_choices;
-  const allSkillOptions = skillGroups.flatMap((g) => g.options);
   const maxSkills = skillGroups.reduce((s, g) => s + g.choice_count, 0);
+  const allExpertiseSelected = cls.expertise_choices.flatMap((group) =>
+    getExpertiseSelectionsForTrait(state, group.trait_id),
+  );
+  const classToolIds = state.class_tool_selections
+    .map((tool) => tool.tool_id)
+    .filter((id): id is number => id !== null);
   const lockedOriginFeat = findLockedOriginFeatSelection(background);
   const visibleOriginFeatChoices = getVisibleOriginFeatChoices(background);
   const traitGroups = species.traits.flatMap((trait) =>
@@ -423,20 +440,30 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
                     Perícias de classe — escolha {maxSkills}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    {allSkillOptions.map((skill) => (
-                      <ChipToggle
-                        key={skill.skill_id}
-                        label={skill.name}
-                        selected={state.class_skill_ids.includes(skill.skill_id)}
-                        disabled={
-                          !state.class_skill_ids.includes(skill.skill_id) &&
-                          state.class_skill_ids.length >= maxSkills
-                        }
-                        onToggle={() =>
-                          onChange(toggleClassSkill(state, data, skill.skill_id))
-                        }
-                      />
-                    ))}
+                    {skillGroups.flatMap((group) =>
+                      visibleWhenTaken(
+                        group.options,
+                        state.class_skill_ids,
+                        [
+                          ...state.class_skill_ids,
+                          ...skillIdsGrantedOutsideClass(data, state),
+                        ],
+                        (skill) => skill.skill_id,
+                      ).map((skill) => (
+                        <ChipToggle
+                          key={`${group.choice_group}-${skill.skill_id}`}
+                          label={skill.name}
+                          selected={state.class_skill_ids.includes(skill.skill_id)}
+                          disabled={
+                            !state.class_skill_ids.includes(skill.skill_id) &&
+                            state.class_skill_ids.length >= maxSkills
+                          }
+                          onToggle={() =>
+                            onChange(toggleClassSkill(state, data, skill.skill_id))
+                          }
+                        />
+                      )),
+                    )}
                   </div>
                 </section>
               ) : null}
@@ -471,7 +498,14 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
                       </p>
                     ) : (
                       <div className="mt-2 flex flex-wrap gap-1.5">
-                        {eligible.map((skill) => (
+                        {visibleWhenTaken(
+                          eligible,
+                          selected,
+                          allExpertiseSelected.filter(
+                            (skillId) => !selected.includes(skillId),
+                          ),
+                          (skill) => skill.skill_id,
+                        ).map((skill) => (
                           <ChipToggle
                             key={`exp-${group.trait_id}-${skill.skill_id}`}
                             label={skill.name}
@@ -498,42 +532,58 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
                 );
               })}
 
-              {cls.tool_choices.map((group) => (
-                <section key={group.option_group}>
-                  <p className="text-xs font-medium text-foreground">
-                    {group.option_group}
-                  </p>
-                  {group.notes ? (
-                    <p className="text-xs text-muted">{group.notes}</p>
-                  ) : null}
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {group.options.map((tool) => {
-                      const toolId = tool.tool_id;
-                      if (!toolId) return null;
-                      const selected = state.class_tool_selections.some(
-                        (t) => t.tool_id === toolId,
-                      );
-                      return (
-                        <ChipToggle
-                          key={`${group.option_group}-${tool.name}`}
-                          label={tool.name}
-                          selected={selected}
-                          onToggle={() =>
-                            onChange(
-                              setClassTool(state, {
-                                tool_id: toolId,
-                                name: tool.name,
-                                source_type: "class",
-                                source_id: cls.id,
-                              }),
-                            )
-                          }
-                        />
-                      );
-                    })}
-                  </div>
-                </section>
-              ))}
+              {cls.tool_choices.map((group) => {
+                const selectedInGroup = state.class_tool_selections
+                  .filter(
+                    (entry) =>
+                      entry.source_type === "class" &&
+                      entry.source_id === cls.id,
+                  )
+                  .map((entry) => entry.tool_id)
+                  .filter((id): id is number => id !== null);
+
+                return (
+                  <section key={group.option_group}>
+                    <p className="text-xs font-medium text-foreground">
+                      {group.option_group}
+                    </p>
+                    {group.notes ? (
+                      <p className="text-xs text-muted">{group.notes}</p>
+                    ) : null}
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {visibleWhenTaken(
+                        group.options.filter(
+                          (tool): tool is typeof tool & { tool_id: number } =>
+                            tool.tool_id !== null,
+                        ),
+                        selectedInGroup,
+                        classToolIds.filter((id) => !selectedInGroup.includes(id)),
+                        (tool) => tool.tool_id,
+                      ).map((tool) => {
+                        const toolId = tool.tool_id;
+                        const selected = selectedInGroup.includes(toolId);
+                        return (
+                          <ChipToggle
+                            key={`${group.option_group}-${tool.name}`}
+                            label={tool.name}
+                            selected={selected}
+                            onToggle={() =>
+                              onChange(
+                                setClassTool(state, {
+                                  tool_id: toolId,
+                                  name: tool.name,
+                                  source_type: "class",
+                                  source_id: cls.id,
+                                }),
+                              )
+                            }
+                          />
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              })}
             </div>
           ) : null}
 
@@ -548,7 +598,11 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
                 <SpellPickerSection
                   title="Truques"
                   hint={`Escolha ${cls.spellcasting.cantrip_count} truque(s)`}
-                  spells={cantripsForClass(cls.spellcasting)}
+                  spells={visibleSpells(
+                    cantripsForClass(cls.spellcasting),
+                    state.cantrip_spell_ids,
+                    spellIdsTakenElsewhere(state, { cantrips: true }),
+                  )}
                   selectedIds={state.cantrip_spell_ids}
                   max={cls.spellcasting.cantrip_count}
                   filter={cantripFilter}
@@ -563,7 +617,11 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
                 <SpellPickerSection
                   title="Grimório"
                   hint={`Adicione ${cls.spellcasting.spellbook_count} magia(s) de nível 1`}
-                  spells={level1SpellsForClass(cls.spellcasting)}
+                  spells={visibleSpells(
+                    level1SpellsForClass(cls.spellcasting),
+                    state.spellbook_spell_ids,
+                    spellIdsTakenElsewhere(state, { spellbook: true }),
+                  )}
                   selectedIds={state.spellbook_spell_ids}
                   max={cls.spellcasting.spellbook_count}
                   filter={spellbookFilter}
@@ -582,13 +640,18 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
                       ? `Escolha ${cls.spellcasting.prepared_count} magia(s) do grimório`
                       : `Escolha ${cls.spellcasting.prepared_count} magia(s) de nível 1`
                   }
-                  spells={
+                  spells={visibleSpells(
                     cls.spellcasting.uses_spellbook
                       ? level1SpellsForClass(cls.spellcasting).filter((spell) =>
                           state.spellbook_spell_ids.includes(spell.spell_id),
                         )
-                      : level1SpellsForClass(cls.spellcasting)
-                  }
+                      : level1SpellsForClass(cls.spellcasting),
+                    state.prepared_spell_ids,
+                    spellIdsTakenElsewhere(state, {
+                      prepared: true,
+                      spellbook: cls.spellcasting.uses_spellbook,
+                    }),
+                  )}
                   selectedIds={state.prepared_spell_ids}
                   max={cls.spellcasting.prepared_count}
                   filter={preparedFilter}
@@ -656,11 +719,20 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
                       </p>
                       <p className="text-xs text-muted">{opt.name}</p>
                       <div className="mt-1.5 flex flex-wrap gap-1.5">
-                        {categoryTools.map((tool) => {
+                        {visibleWhenTaken(
+                          categoryTools.filter(
+                            (tool): tool is typeof tool & { tool_id: number } =>
+                              tool.tool_id !== null,
+                          ),
+                          state.background_tool_selections
+                            .map((entry) => entry.tool_id)
+                            .filter((id): id is number => id !== null),
+                          classToolIds,
+                          (tool) => tool.tool_id,
+                        ).map((tool) => {
                           const toolId = tool.tool_id;
-                          if (!toolId) return null;
                           const selected = state.background_tool_selections.some(
-                            (t) => t.tool_id === toolId,
+                            (entry) => entry.tool_id === toolId,
                           );
                           return (
                             <ChipToggle
@@ -694,7 +766,13 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
                     <p className="text-xs text-muted">{group.notes}</p>
                   ) : null}
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {group.options.map((opt, index) => {
+                    {visibleTraitOptions(
+                      group.options,
+                      group,
+                      data,
+                      state,
+                      state.species_trait_options,
+                    ).map((opt, index) => {
                       const selected = state.species_trait_options.some(
                         (entry) => entry.trait_option_id === opt.trait_option_id,
                       );
@@ -755,7 +833,7 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
                     Humanos ganham um feat de origem adicional (Versátil).
                   </p>
                   <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                    {data.origin_feats.map((feat) => (
+                    {visibleHumanOriginFeats(data, state).map((feat) => (
                       <SelectionCard
                         key={feat.id}
                         compact
@@ -784,7 +862,13 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
                     {humanFeat.name}: {group.trait_name}
                   </p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {group.options.map((opt, index) => {
+                    {visibleTraitOptions(
+                      group.options,
+                      group,
+                      data,
+                      state,
+                      state.human_origin_feat_trait_options,
+                    ).map((opt, index) => {
                       const selected = state.human_origin_feat_trait_options.some(
                         (entry) => entry.trait_option_id === opt.trait_option_id,
                       );
@@ -861,8 +945,21 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
                     {background.origin_feat_name}: {group.trait_name}
                   </p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {group.options.map((opt, index) => {
-                      const selected = state.origin_feat_trait_options.some(
+                    {visibleTraitOptions(
+                      group.options,
+                      group,
+                      data,
+                      state,
+                      mergeOriginFeatTraitOptions(
+                        background,
+                        state.origin_feat_trait_options,
+                      ),
+                    ).map((opt, index) => {
+                      const originFeatOptions = mergeOriginFeatTraitOptions(
+                        background,
+                        state.origin_feat_trait_options,
+                      );
+                      const selected = originFeatOptions.some(
                         (entry) => entry.trait_option_id === opt.trait_option_id,
                       );
                       return (
@@ -872,7 +969,7 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
                           selected={selected}
                           disabled={
                             !selected &&
-                            state.origin_feat_trait_options.filter(
+                            originFeatOptions.filter(
                               (entry) =>
                                 entry.trait_id === group.trait_id &&
                                 entry.option_group === group.option_group,

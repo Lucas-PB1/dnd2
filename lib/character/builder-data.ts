@@ -572,7 +572,9 @@ async function fetchSpeciesTraits(
 
   const { data: options, error: optionError } = await admin
     .from("trait_options")
-    .select("id, trait_id, option_group, name, description, sort_order")
+    .select(
+      "id, trait_id, option_group, name, description, sort_order, skill_id",
+    )
     .in("trait_id", traitIds.length ? traitIds : [-1])
     .order("sort_order");
 
@@ -605,6 +607,7 @@ async function fetchSpeciesTraits(
               name: opt.name,
               description: opt.description,
               option_group: opt.option_group,
+              skill_id: opt.skill_id,
             }),
           ),
       }));
@@ -651,7 +654,9 @@ async function fetchOriginFeatChoicesBatch(
 
   const { data: options, error: optionError } = await admin
     .from("trait_options")
-    .select("id, trait_id, option_group, name, description, sort_order")
+    .select(
+      "id, trait_id, option_group, name, description, sort_order, skill_id",
+    )
     .in("trait_id", traitIds)
     .order("sort_order");
 
@@ -690,6 +695,7 @@ async function fetchOriginFeatChoicesBatch(
                 name: opt.name,
                 description: opt.description,
                 option_group: opt.option_group,
+                skill_id: opt.skill_id,
               }),
             ),
         } satisfies BuilderOriginFeatChoice;
@@ -1143,7 +1149,9 @@ async function fetchSpeciesTraitsForSpecies(
 
   const { data: options, error: optionError } = await admin
     .from("trait_options")
-    .select("id, trait_id, option_group, name, description, sort_order")
+    .select(
+      "id, trait_id, option_group, name, description, sort_order, skill_id",
+    )
     .in("trait_id", traitIds)
     .order("sort_order");
 
@@ -1174,6 +1182,7 @@ async function fetchSpeciesTraitsForSpecies(
               name: opt.name,
               description: opt.description,
               option_group: opt.option_group,
+              skill_id: opt.skill_id,
             }),
           ),
       }));
