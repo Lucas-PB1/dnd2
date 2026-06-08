@@ -99,33 +99,34 @@ function AbilityBoard({
               </div>
             </div>
             <div className="mt-2 grid grid-cols-3 gap-1">
-              {[...new Set(pool)].map((value) => {
-                const poolMax = poolCounts[value] ?? 0;
-                const usedForValue = ABILITY_KEYS.filter(
-                  (k) => state.ability_assignment[k] === value,
-                ).length;
-                const takenElsewhere =
-                  usedForValue >= poolMax && score !== value;
-                const isCurrent = score === value;
-                return (
-                  <ChipToggle
-                    key={value}
-                    size="sm"
-                    label={String(value)}
-                    selected={isCurrent}
-                    disabled={takenElsewhere && !isCurrent}
-                    onToggle={() =>
-                      onChange(
-                        assignAbilityScore(
-                          state,
-                          key,
-                          isCurrent ? null : value,
-                        ),
-                      )
-                    }
-                  />
-                );
-              })}
+              {[...new Set(pool)]
+                .filter((value) => {
+                  const poolMax = poolCounts[value] ?? 0;
+                  const usedForValue = ABILITY_KEYS.filter(
+                    (abilityKey) => state.ability_assignment[abilityKey] === value,
+                  ).length;
+                  return usedForValue < poolMax || score === value;
+                })
+                .map((value) => {
+                  const isCurrent = score === value;
+                  return (
+                    <ChipToggle
+                      key={value}
+                      size="sm"
+                      label={String(value)}
+                      selected={isCurrent}
+                      onToggle={() =>
+                        onChange(
+                          assignAbilityScore(
+                            state,
+                            key,
+                            isCurrent ? null : value,
+                          ),
+                        )
+                      }
+                    />
+                  );
+                })}
             </div>
           </div>
         );
@@ -172,33 +173,35 @@ function RollAbilityBoard({
               </div>
             </div>
             <div className="mt-2 grid grid-cols-3 gap-1">
-              {pool.map((value, slotIndex) => {
-                const slotOwner = ABILITY_KEYS.find(
-                  (abilityKey) =>
-                    state.roll_slot_assignment[abilityKey] === slotIndex,
-                );
-                const isCurrent = activeSlot === slotIndex;
-                const takenElsewhere =
-                  slotOwner !== undefined && slotOwner !== key;
-                return (
-                  <ChipToggle
-                    key={`${key}-slot-${slotIndex}`}
-                    size="sm"
-                    label={String(value)}
-                    selected={isCurrent}
-                    disabled={takenElsewhere}
-                    onToggle={() =>
-                      onChange(
-                        assignRolledSlot(
-                          state,
-                          key,
-                          isCurrent ? null : slotIndex,
-                        ),
-                      )
-                    }
-                  />
-                );
-              })}
+              {pool
+                .map((value, slotIndex) => ({ value, slotIndex }))
+                .filter(({ slotIndex }) => {
+                  const slotOwner = ABILITY_KEYS.find(
+                    (abilityKey) =>
+                      state.roll_slot_assignment[abilityKey] === slotIndex,
+                  );
+                  return slotOwner === undefined || slotOwner === key;
+                })
+                .map(({ value, slotIndex }) => {
+                  const isCurrent = activeSlot === slotIndex;
+                  return (
+                    <ChipToggle
+                      key={`${key}-slot-${slotIndex}`}
+                      size="sm"
+                      label={String(value)}
+                      selected={isCurrent}
+                      onToggle={() =>
+                        onChange(
+                          assignRolledSlot(
+                            state,
+                            key,
+                            isCurrent ? null : slotIndex,
+                          ),
+                        )
+                      }
+                    />
+                  );
+                })}
             </div>
           </div>
         );
