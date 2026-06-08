@@ -1,7 +1,9 @@
 import { ApiError } from "@/lib/api/errors";
 import type {
   BuilderClassEntry,
+  BuilderClassFeature,
   BuilderSkillChoiceGroup,
+  BuilderSubclassSummary,
   BuilderToolChoiceGroup,
 } from "@/features/character-builder/types/builder.types";
 import type { BuilderAdminClient } from "./types";
@@ -27,6 +29,30 @@ type ToolOptionRow = {
   tool_category: string | null;
   notes: string | null;
 };
+
+type TraitRow = {
+  id: number;
+  name: string;
+  description: string | null;
+};
+
+type ClassTraitRow = {
+  class_id: number;
+  trait_id: number;
+  level_required: number;
+  traits: TraitRow | TraitRow[] | null;
+};
+
+type SubclassRow = {
+  class_id: number;
+  id: number;
+  name: string;
+  description: string | null;
+};
+
+function one<T>(value: T | T[] | null): T | null {
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+}
 
 function mapSkillChoiceGroups(
   skillGroups: { choice_group: string; choice_count: number; notes: string | null }[],
@@ -98,6 +124,103 @@ function mapClassProficiencies(
   };
 }
 
+function mapClassFeature(row: ClassTraitRow): BuilderClassFeature | null {
+  const trait = one(row.traits);
+  if (!trait) return null;
+
+  return {
+    trait_id: row.trait_id,
+    name: trait.name,
+    description: trait.description,
+    level_required: row.level_required,
+  };
+}
+
+async function fetchClassFeatures(
+  admin: BuilderAdminClient,
+  classId: number,
+): Promise<BuilderClassFeature[]> {
+  const { data, error } = await admin
+    .from("class_traits")
+    .select("class_id, trait_id, level_required, traits(id, name, description)")
+    .eq("class_id", classId)
+    .order("level_required");
+
+  if (error) throw new ApiError(error.message, 400);
+
+  return ((data ?? []) as ClassTraitRow[])
+    .map(mapClassFeature)
+    .filter((feature): feature is BuilderClassFeature => feature !== null);
+}
+
+async function fetchAllClassFeatures(
+  admin: BuilderAdminClient,
+): Promise<Map<number, BuilderClassFeature[]>> {
+  const { data, error } = await admin
+    .from("class_traits")
+    .select("class_id, trait_id, level_required, traits(id, name, description)")
+    .order("level_required");
+
+  if (error) throw new ApiError(error.message, 400);
+
+  const featuresByClass = new Map<number, BuilderClassFeature[]>();
+
+  for (const row of (data ?? []) as ClassTraitRow[]) {
+    const feature = mapClassFeature(row);
+    if (!feature) continue;
+
+    const list = featuresByClass.get(row.class_id) ?? [];
+    list.push(feature);
+    featuresByClass.set(row.class_id, list);
+  }
+
+  return featuresByClass;
+}
+
+async function fetchClassSubclasses(
+  admin: BuilderAdminClient,
+  classId: number,
+): Promise<BuilderSubclassSummary[]> {
+  const { data, error } = await admin
+    .from("subclasses")
+    .select("class_id, id, name, description")
+    .eq("class_id", classId)
+    .order("name");
+
+  if (error) throw new ApiError(error.message, 400);
+
+  return ((data ?? []) as SubclassRow[]).map(({ id, name, description }) => ({
+    id,
+    name,
+    description,
+  }));
+}
+
+async function fetchAllClassSubclasses(
+  admin: BuilderAdminClient,
+): Promise<Map<number, BuilderSubclassSummary[]>> {
+  const { data, error } = await admin
+    .from("subclasses")
+    .select("class_id, id, name, description")
+    .order("name");
+
+  if (error) throw new ApiError(error.message, 400);
+
+  const subclassesByClass = new Map<number, BuilderSubclassSummary[]>();
+
+  for (const row of (data ?? []) as SubclassRow[]) {
+    const list = subclassesByClass.get(row.class_id) ?? [];
+    list.push({
+      id: row.id,
+      name: row.name,
+      description: row.description,
+    });
+    subclassesByClass.set(row.class_id, list);
+  }
+
+  return subclassesByClass;
+}
+
 export async function fetchClassById(
   admin: BuilderAdminClient,
   classId: number,
@@ -143,9 +266,11 @@ export async function fetchClassById(
 
   if (toolOptionsError) throw new ApiError(toolOptionsError.message, 400);
 
-  const [spellcasting, expertise_choices] = await Promise.all([
+  const [spellcasting, expertise_choices, features, subclasses] = await Promise.all([
     fetchClassSpellcasting(admin, classId, cls.name),
     fetchClassExpertiseChoices(admin, classId),
+    fetchClassFeatures(admin, classId),
+    fetchClassSubclasses(admin, classId),
   ]);
 
   return {
@@ -157,6 +282,8 @@ export async function fetchClassById(
     tool_choices: mapToolChoiceGroups(toolOptions ?? []),
     spellcasting,
     expertise_choices,
+    features,
+    subclasses,
   };
 }
 
@@ -166,6 +293,8 @@ export async function fetchClassesSummary(admin: BuilderAdminClient) {
     { data: proficiencies, error: profError },
     expertiseByClass,
     spellcastingByClass,
+    featuresByClass,
+    subclassesByClass,
   ] = await Promise.all([
     admin.from("classes").select("id, name, hit_die").order("name"),
     admin
@@ -174,6 +303,8 @@ export async function fetchClassesSummary(admin: BuilderAdminClient) {
       .eq("requires_choice", false),
     fetchAllClassExpertiseChoices(admin),
     fetchAllClassSpellcasting(admin),
+    fetchAllClassFeatures(admin),
+    fetchAllClassSubclasses(admin),
   ]);
 
   if (error) throw new ApiError(error.message, 400);
@@ -190,6 +321,8 @@ export async function fetchClassesSummary(admin: BuilderAdminClient) {
       tool_choices: [] as BuilderToolChoiceGroup[],
       spellcasting: spellcastingByClass.get(cls.id) ?? null,
       expertise_choices: expertiseByClass.get(cls.id) ?? [],
+      features: featuresByClass.get(cls.id) ?? [],
+      subclasses: subclassesByClass.get(cls.id) ?? [],
     } satisfies BuilderClassEntry;
   });
 }

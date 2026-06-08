@@ -1,5 +1,6 @@
 "use client";
 
+import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { logout } from "@/features/auth/services/auth.service";
 
@@ -9,7 +10,9 @@ export function LogoutButton() {
       type="button"
       variant="ghost"
       size="md"
-      className="w-auto! px-3"
+      fullWidth={false}
+      icon={<LogOut className="size-4" />}
+      className="px-3"
       onClick={() => void logout()}
     >
       Sair

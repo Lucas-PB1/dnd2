@@ -1,8 +1,10 @@
+import { Skeleton } from "@/components/ui/Skeleton";
+
 function SignInFallback() {
   return (
-    <div className="mx-auto w-full animate-pulse rounded-2xl border border-border bg-surface/50 p-8">
-      <div className="mx-auto h-8 w-48 rounded bg-surface-elevated" />
-      <div className="mt-6 h-12 rounded-lg bg-surface-elevated" />
+    <div className="editorial-surface mx-auto w-full rounded-lg p-8">
+      <Skeleton className="mx-auto h-8 w-48" />
+      <Skeleton className="mt-6 h-12" />
     </div>
   );
 }

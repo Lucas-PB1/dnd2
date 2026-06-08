@@ -1,24 +1,35 @@
 "use client";
 
-import { forwardRef, type ButtonHTMLAttributes } from "react";
+import {
+  forwardRef,
+  type ButtonHTMLAttributes,
+  type ReactNode,
+} from "react";
+import { LoaderCircle } from "lucide-react";
 
-type ButtonVariant = "primary" | "secondary" | "ghost" | "google";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "google" | "danger";
 type ButtonSize = "md" | "lg";
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
+  icon?: ReactNode;
+  iconPosition?: "left" | "right";
+  fullWidth?: boolean;
 };
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-brand text-on-brand hover:bg-brand-hover disabled:bg-brand-muted/50 disabled:text-muted-subtle",
+    "border border-brand/70 bg-brand text-on-brand shadow-[0_10px_28px_rgb(199_161_90/0.18),inset_0_1px_0_rgb(255_255_255/0.22)] hover:border-brand-hover hover:bg-brand-hover disabled:bg-brand-muted/50 disabled:text-muted-subtle",
   secondary:
-    "border border-border-strong bg-surface/60 text-brand-soft hover:border-brand/60 hover:bg-surface",
-  ghost: "text-brand-soft/80 hover:bg-surface-elevated/60 hover:text-brand-soft",
+    "border border-border-strong bg-surface/65 text-brand-soft shadow-[inset_0_1px_0_rgb(255_255_255/0.06)] hover:border-brand/60 hover:bg-surface-raised",
+  ghost:
+    "border border-transparent text-brand-soft/85 hover:border-border hover:bg-surface-elevated/70 hover:text-brand-soft",
   google:
-    "border border-border bg-surface/80 text-foreground hover:border-muted hover:bg-surface-elevated",
+    "border border-border bg-surface/80 text-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.06)] hover:border-muted hover:bg-surface-elevated",
+  danger:
+    "border border-danger/35 bg-danger-surface text-danger shadow-[inset_0_1px_0_rgb(255_255_255/0.06)] hover:border-danger/70 hover:bg-danger-surface/80",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -32,6 +43,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       variant = "primary",
       size = "lg",
       loading = false,
+      icon,
+      iconPosition = "left",
+      fullWidth = true,
       className = "",
       disabled,
       children,
@@ -42,19 +56,30 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     <button
       ref={ref}
       disabled={disabled || loading}
-      className={`inline-flex w-full items-center justify-center gap-2 rounded-lg font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      className={`inline-flex ${
+        fullWidth ? "w-full" : "w-auto"
+      } items-center justify-center gap-2 rounded-lg font-medium transition-[background-color,border-color,color,box-shadow,transform] hover:-translate-y-px active:translate-y-0 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
       {...props}
     >
       {loading ? (
         <>
-          <span
-            className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent"
-            aria-hidden
-          />
-          <span>Aguarde…</span>
+          <LoaderCircle className="size-4 animate-spin" aria-hidden />
+          <span>Aguarde...</span>
         </>
       ) : (
-        children
+        <>
+          {icon && iconPosition === "left" ? (
+            <span className="shrink-0" aria-hidden>
+              {icon}
+            </span>
+          ) : null}
+          <span className="min-w-0">{children}</span>
+          {icon && iconPosition === "right" ? (
+            <span className="shrink-0" aria-hidden>
+              {icon}
+            </span>
+          ) : null}
+        </>
       )}
     </button>
   ),

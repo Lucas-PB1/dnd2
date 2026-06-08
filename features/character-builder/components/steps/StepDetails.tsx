@@ -50,7 +50,7 @@ export function StepDetails({ data, state, onChange }: StepDetailsProps) {
           />
         </div>
 
-        <dl className="grid min-w-0 gap-2 rounded-xl border border-border bg-surface/40 p-4 text-sm sm:grid-cols-2">
+        <dl className="grid min-w-0 gap-2 rounded-lg border border-border bg-surface/40 p-4 text-sm shadow-[inset_0_1px_0_rgb(255_255_255/0.035)] sm:grid-cols-2">
           <div>
             <dt className="text-muted">Classe</dt>
             <dd className="font-medium text-foreground">{cls?.name ?? "—"}</dd>
@@ -75,7 +75,7 @@ export function StepDetails({ data, state, onChange }: StepDetailsProps) {
                 {ABILITY_KEYS.map((key) => (
                   <span
                     key={key}
-                    className="rounded-md bg-surface-elevated px-2 py-1 text-xs"
+                    className="rounded-md border border-border-muted bg-surface-elevated px-2 py-1 text-xs"
                   >
                     {ABILITY_LABELS[key]} {abilities[key]} (
                     {formatModifier(abilities[key])})

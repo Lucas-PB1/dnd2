@@ -47,6 +47,8 @@ export async function fetchCharacterBuilderSummary(): Promise<CharacterBuilderSu
         armor,
         spellcasting,
         expertise_choices,
+        features,
+        subclasses,
       }) => ({
         id,
         name,
@@ -56,6 +58,8 @@ export async function fetchCharacterBuilderSummary(): Promise<CharacterBuilderSu
         armor,
         spellcasting: spellcasting ?? null,
         expertise_choices: expertise_choices ?? [],
+        features: features ?? [],
+        subclasses: subclasses ?? [],
       }),
     ),
     species,

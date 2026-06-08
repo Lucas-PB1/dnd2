@@ -1,9 +1,14 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import { Send, UserMinus, Users } from "lucide-react";
+import { Alert } from "@/components/ui/Alert";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import { Select } from "@/components/ui/Select";
+import { Surface } from "@/components/ui/Surface";
 import { FadeIn } from "@/components/motion";
 import {
   fetchCampaignMembers,
@@ -56,7 +61,7 @@ function MemberRow({
   const removeLabel = isSelf ? "Sair da mesa" : "Remover";
 
   return (
-    <li className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background/30 px-4 py-3">
+    <li className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-background/35 px-4 py-3 shadow-[inset_0_1px_0_rgb(255_255_255/0.03)]">
       <div className="min-w-0">
         <p className="truncate font-medium text-foreground">
           {memberLabel(member)}
@@ -66,15 +71,17 @@ function MemberRow({
         ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <span className="rounded-full border border-border-strong bg-surface/60 px-2.5 py-0.5 text-xs text-brand-soft">
+        <Badge tone={member.is_owner ? "brand" : "neutral"}>
           {roleLabel(member.role_name, member.is_owner)}
-        </span>
+        </Badge>
         {canRemove ? (
           <Button
             type="button"
-            variant="ghost"
+            variant="danger"
             size="md"
-            className="!w-auto min-w-0 px-2 text-danger hover:bg-danger-surface/40 hover:text-danger"
+            fullWidth={false}
+            icon={<UserMinus className="size-4" />}
+            className="min-w-0 px-2"
             loading={removing === member.player_id}
             onClick={() => onRemove(member.player_id)}
           >
@@ -117,7 +124,13 @@ export function CampaignMembersPanel({
   }, [campaignId]);
 
   useEffect(() => {
-    void loadMembers();
+    let active = true;
+    queueMicrotask(() => {
+      if (active) void loadMembers();
+    });
+    return () => {
+      active = false;
+    };
   }, [loadMembers]);
 
   const handleInvite = async (event: FormEvent<HTMLFormElement>) => {
@@ -168,9 +181,12 @@ export function CampaignMembersPanel({
 
   return (
     <FadeIn delay={0.18} className="mt-10">
-      <div className="rounded-2xl border border-border bg-surface/40 p-6">
+      <Surface className="p-6">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="font-medium text-brand-soft">Jogadores na mesa</h2>
+          <h2 className="inline-flex items-center gap-2 font-medium text-brand-soft">
+            <Users className="size-4" aria-hidden />
+            Jogadores na mesa
+          </h2>
           <p className="text-xs text-muted-subtle">
             {members.length}{" "}
             {members.length === 1 ? "pessoa" : "pessoas"}
@@ -183,9 +199,7 @@ export function CampaignMembersPanel({
         {loading ? (
           <p className="mt-4 text-sm text-muted">Carregando membros…</p>
         ) : loadError ? (
-          <p className="mt-4 rounded-lg border border-danger/30 bg-danger-surface px-4 py-3 text-sm text-danger" role="alert">
-            {loadError}
-          </p>
+          <Alert variant="error" className="mt-4">{loadError}</Alert>
         ) : (
           <ul className="mt-4 space-y-2" aria-label="Membros da campanha">
             {members.map((member) => (
@@ -210,9 +224,7 @@ export function CampaignMembersPanel({
             </p>
 
             {inviteError ? (
-              <p className="rounded-lg border border-danger/30 bg-danger-surface px-4 py-3 text-sm text-danger" role="alert">
-                {inviteError}
-              </p>
+              <Alert variant="error">{inviteError}</Alert>
             ) : null}
 
             <div>
@@ -232,27 +244,32 @@ export function CampaignMembersPanel({
 
             <div>
               <Label htmlFor="invite-role">Papel na mesa</Label>
-              <select
+              <Select
                 id="invite-role"
                 name="role"
                 value={role}
                 onChange={(e) => setRole(e.target.value as CampaignInviteRole)}
-                className="mt-1.5 min-h-11 w-full rounded-lg border border-border bg-background/50 px-3 py-2 text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                className="mt-1.5"
               >
                 {INVITEABLE_ROLES.map((option) => (
                   <option key={option} value={option}>
                     {INVITE_ROLE_LABELS[option]}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
 
-            <Button type="submit" loading={inviting} className="sm:!w-auto">
+            <Button
+              type="submit"
+              loading={inviting}
+              icon={<Send className="size-4" />}
+              className="sm:!w-auto"
+            >
               Convidar
             </Button>
           </form>
         ) : null}
-      </div>
+      </Surface>
     </FadeIn>
   );
 }

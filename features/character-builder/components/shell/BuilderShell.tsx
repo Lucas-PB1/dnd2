@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
+import { ArrowLeft } from "lucide-react";
+import { Alert } from "@/components/ui/Alert";
 import { BuilderPreviewPanel } from "@/features/character-builder/components/shell/BuilderPreviewPanel";
 import { BuilderStepNav } from "@/features/character-builder/components/shell/BuilderStepNav";
 import type {
@@ -20,6 +22,35 @@ type BuilderShellProps = {
   children: ReactNode;
 };
 
+function canScrollInDirection(element: HTMLElement, deltaY: number) {
+  if (deltaY < 0) return element.scrollTop > 0;
+  if (deltaY > 0) {
+    return element.scrollTop + element.clientHeight < element.scrollHeight - 1;
+  }
+  return false;
+}
+
+function closestScrollable(
+  target: EventTarget | null,
+  boundary: HTMLElement | null,
+) {
+  let node = target instanceof HTMLElement ? target : null;
+
+  while (node && node !== boundary) {
+    const overflowY = window.getComputedStyle(node).overflowY;
+    const scrollable =
+      (overflowY === "auto" ||
+        overflowY === "scroll" ||
+        overflowY === "overlay") &&
+      node.scrollHeight > node.clientHeight;
+
+    if (scrollable) return node;
+    node = node.parentElement;
+  }
+
+  return null;
+}
+
 export function BuilderShell({
   state,
   data,
@@ -30,15 +61,71 @@ export function BuilderShell({
   footer,
   children,
 }: BuilderShellProps) {
+  const shellRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const shell = shellRef.current;
+    if (!shell) return;
+
+    const handleWheel = (event: WheelEvent) => {
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+
+      const target = event.target;
+      const choiceScrollArea = shell.querySelector<HTMLElement>(
+        "[data-builder-scroll-area='true']",
+      );
+
+      if (!choiceScrollArea) return;
+
+      if (
+        target instanceof Node &&
+        choiceScrollArea.contains(target) &&
+        canScrollInDirection(choiceScrollArea, event.deltaY)
+      ) {
+        choiceScrollArea.scrollTop += event.deltaY;
+        event.preventDefault();
+        return;
+      }
+
+      const targetScrollable = closestScrollable(target, shell);
+
+      if (
+        targetScrollable &&
+        canScrollInDirection(targetScrollable, event.deltaY)
+      ) {
+        return;
+      }
+
+      if (!canScrollInDirection(choiceScrollArea, event.deltaY)) return;
+
+      choiceScrollArea.scrollTop += event.deltaY;
+      event.preventDefault();
+    };
+
+    shell.addEventListener("wheel", handleWheel, {
+      capture: true,
+      passive: false,
+    });
+
+    return () => {
+      shell.removeEventListener("wheel", handleWheel, { capture: true });
+    };
+  }, []);
+
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
+    <div
+      ref={shellRef}
+      className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden"
+    >
       <header className="flex shrink-0 items-center justify-between gap-4 border-b border-border pb-3">
         <div className="min-w-0">
           <Link
             href="/ficha"
-            className="text-sm text-brand transition-colors hover:text-brand-hover"
+            transitionTypes={["nav-back"]}
+            className="inline-flex items-center gap-1.5 text-sm text-brand transition-colors hover:text-brand-hover"
           >
-            ← Voltar às fichas
+            <ArrowLeft className="size-4" aria-hidden />
+            Voltar às fichas
           </Link>
           <h1 className="font-serif text-xl font-semibold text-foreground sm:text-2xl">
             Novo personagem
@@ -48,29 +135,23 @@ export function BuilderShell({
       </header>
 
       {loadError ? (
-        <p
-          className="mt-3 shrink-0 rounded-lg border border-danger/30 bg-danger-surface px-4 py-2 text-sm text-danger"
-          role="alert"
-        >
+        <Alert variant="error" className="mt-3 shrink-0 py-2">
           {loadError}
-        </p>
+        </Alert>
       ) : null}
 
       {error ? (
-        <p
-          className="mt-3 shrink-0 rounded-lg border border-danger/30 bg-danger-surface px-4 py-2 text-sm text-danger"
-          role="alert"
-        >
+        <Alert variant="error" className="mt-3 shrink-0 py-2">
           {error}
-        </p>
+        </Alert>
       ) : null}
 
       <div className="mt-4 grid min-h-0 min-w-0 flex-1 gap-5 lg:grid-cols-[minmax(0,14rem)_minmax(0,1fr)_minmax(0,15rem)] lg:gap-6 xl:grid-cols-[minmax(0,15rem)_minmax(0,1fr)_minmax(0,17rem)] xl:gap-8">
         <aside
           aria-label="Etapas"
-          className="hidden min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-surface/30 lg:flex"
+          className="editorial-card hidden min-h-0 min-w-0 flex-col overflow-hidden rounded-lg lg:flex"
         >
-          <div className="overflow-y-auto p-4">
+          <div className="scrollbar-subtle overflow-y-auto p-4" data-builder-passive-panel>
             <BuilderStepNav
               currentStep={currentStep}
               onStepClick={onStepClick}
@@ -80,7 +161,7 @@ export function BuilderShell({
 
         <section
           aria-label="Área de seleção"
-          className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-surface/40"
+          className="editorial-card flex min-h-0 min-w-0 flex-col overflow-hidden rounded-lg"
         >
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-4 sm:p-5">
             {children}

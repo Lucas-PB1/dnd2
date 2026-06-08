@@ -17,6 +17,8 @@ function stubClass(
     tool_choices: [],
     spellcasting: entry.spellcasting ?? null,
     expertise_choices: entry.expertise_choices ?? [],
+    features: entry.features ?? [],
+    subclasses: entry.subclasses ?? [],
   };
 }
 
@@ -36,8 +38,9 @@ function stubBackground(
     id: entry.id,
     name: entry.name,
     description: entry.description,
-    origin_feat_id: null,
+    origin_feat_id: entry.origin_feat_id,
     origin_feat_name: entry.origin_feat_name,
+    origin_feat_description: entry.origin_feat_description,
     origin_feat_selection_key: null,
     ability_options: entry.ability_options,
     skill_proficiencies: [],

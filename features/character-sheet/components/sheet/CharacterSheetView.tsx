@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { FadeIn } from "@/components/motion";
+import { Badge } from "@/components/ui/Badge";
+import { Surface } from "@/components/ui/Surface";
 import type { CharacterDetail } from "@/features/character-sheet/types/character.types";
 
 type CharacterSheetViewProps = {
@@ -21,9 +24,11 @@ export function CharacterSheetView({ character }: CharacterSheetViewProps) {
       <FadeIn>
         <Link
           href="/ficha"
-          className="text-sm text-brand transition-colors hover:text-brand-hover"
+          transitionTypes={["nav-back"]}
+          className="inline-flex items-center gap-1.5 text-sm text-brand transition-colors hover:text-brand-hover"
         >
-          ← Voltar às fichas
+          <ArrowLeft className="size-4" aria-hidden />
+          Voltar às fichas
         </Link>
       </FadeIn>
 
@@ -35,14 +40,15 @@ export function CharacterSheetView({ character }: CharacterSheetViewProps) {
           >
             {character.name}
           </h1>
-          <span className="rounded-full border border-brand/30 bg-brand-glow/40 px-3 py-1 text-xs font-medium text-brand-soft">
+          <Badge tone="accent">
             Nível {character.level}
-          </span>
+          </Badge>
         </div>
       </FadeIn>
 
       <FadeIn delay={0.12} className="mt-6">
-        <dl className="grid gap-4 rounded-2xl border border-border bg-surface/40 p-6 sm:grid-cols-2">
+        <Surface className="p-6">
+        <dl className="grid gap-4 sm:grid-cols-2">
           <div>
             <dt className="text-xs uppercase tracking-wide text-muted-subtle">Espécie</dt>
             <dd className="mt-1 text-foreground">{character.species_name ?? "—"}</dd>
@@ -56,15 +62,16 @@ export function CharacterSheetView({ character }: CharacterSheetViewProps) {
             <dd className="mt-1 text-foreground">{formatClasses(character)}</dd>
           </div>
         </dl>
+        </Surface>
       </FadeIn>
 
       <FadeIn delay={0.18} className="mt-6">
-        <div className="rounded-2xl border border-dashed border-border-strong bg-surface/20 p-6">
+        <Surface tone="dashed" className="p-6">
           <h2 className="text-sm font-medium text-muted">Em breve</h2>
           <p className="mt-2 text-sm text-muted-subtle">
             Equipamento, magias, combate e vínculo com campanhas.
           </p>
-        </div>
+        </Surface>
       </FadeIn>
     </article>
   );

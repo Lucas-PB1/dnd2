@@ -1,4 +1,5 @@
 import { forwardRef, type InputHTMLAttributes } from "react";
+import { fieldControlClass } from "@/components/ui/fieldStyles";
 
 export type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   error?: string;
@@ -11,9 +12,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       id={id}
       aria-invalid={error ? true : undefined}
       aria-describedby={error && id ? `${id}-error` : undefined}
-      className={`box-border min-h-11 min-w-0 w-full max-w-full rounded-lg border bg-background/50 px-3 py-2 text-foreground placeholder:text-muted-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50 ${
-        error ? "border-danger/70" : "border-border hover:border-border-strong"
-      } ${className}`}
+      className={fieldControlClass({ error: Boolean(error), className })}
       {...props}
     />
   ),

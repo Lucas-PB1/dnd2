@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Sparkles, UserPlus } from "lucide-react";
 import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
 import { Button } from "@/components/ui/Button";
+import { Surface } from "@/components/ui/Surface";
 import type { CharacterSummary } from "@/features/character-sheet/types/character.types";
 import { CharacterCard } from "./CharacterCard";
 
@@ -37,6 +39,7 @@ export function CharacterListView({ initialCharacters }: CharacterListViewProps)
       <FadeIn delay={0.14} className="mt-8">
         <Button
           type="button"
+          icon={<UserPlus className="size-4" />}
           className="sm:w-auto! sm:min-w-44"
           onClick={() => router.push("/ficha/novo")}
         >
@@ -61,12 +64,15 @@ export function CharacterListView({ initialCharacters }: CharacterListViewProps)
         </Stagger>
       ) : (
         <FadeIn delay={0.2} className="mt-10">
-          <div className="rounded-2xl border border-dashed border-border-strong bg-surface/40 p-8 text-center">
-            <p className="text-lg text-foreground/90">Nenhum personagem ainda</p>
+          <Surface tone="dashed" className="p-8 text-center">
+            <span className="mx-auto flex size-11 items-center justify-center rounded-lg border border-accent/25 bg-accent-muted/20 text-accent-soft">
+              <Sparkles className="size-5" aria-hidden />
+            </span>
+            <p className="mt-4 text-lg text-foreground/90">Nenhum personagem ainda</p>
             <p className="mt-2 text-sm text-muted-subtle">
               Crie sua primeira ficha para começar a aventura.
             </p>
-          </div>
+          </Surface>
         </FadeIn>
       )}
     </section>

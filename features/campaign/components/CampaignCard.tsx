@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
+import { CalendarDays, Crown, Users } from "lucide-react";
+import { Badge } from "@/components/ui/Badge";
 import type { Campaign } from "@/features/campaign/types/campaign.types";
 
 type CampaignCardProps = {
@@ -32,16 +34,18 @@ export function CampaignCard({ campaign, currentUserId }: CampaignCardProps) {
     <motion.li whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
       <Link
         href={`/campanha/${campaign.id}`}
-        className="block rounded-xl border border-border bg-surface/40 p-5 transition-colors hover:border-border-strong hover:bg-surface/60"
+        transitionTypes={["nav-forward"]}
+        className="editorial-card editorial-card-interactive block rounded-lg p-5"
       >
         <div className="flex items-start justify-between gap-3">
           <h2 className="font-serif text-lg font-semibold text-foreground">
             {campaign.name}
           </h2>
           {isOwner ? (
-            <span className="shrink-0 rounded-full border border-brand/30 bg-brand-glow/40 px-2.5 py-0.5 text-xs font-medium text-brand-soft">
+            <Badge tone="brand" className="gap-1">
+              <Crown className="size-3" aria-hidden />
               Dono
-            </span>
+            </Badge>
           ) : null}
         </div>
 
@@ -51,9 +55,16 @@ export function CampaignCard({ campaign, currentUserId }: CampaignCardProps) {
           </p>
         ) : null}
 
-        <p className="mt-4 text-xs text-muted-subtle">
-          {memberLabel} · Atualizada em {formatDate(campaign.updated_at)}
-        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-subtle">
+          <span className="inline-flex items-center gap-1">
+            <Users className="size-3.5" aria-hidden />
+            {memberLabel}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <CalendarDays className="size-3.5" aria-hidden />
+            Atualizada em {formatDate(campaign.updated_at)}
+          </span>
+        </div>
       </Link>
     </motion.li>
   );

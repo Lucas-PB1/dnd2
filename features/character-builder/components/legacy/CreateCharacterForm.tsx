@@ -3,9 +3,12 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft, Sparkles, X } from "lucide-react";
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import { Select } from "@/components/ui/Select";
 import { FadeIn } from "@/components/motion";
 import {
   createCharacter,
@@ -15,9 +18,6 @@ import {
   CHARACTER_NAME_MIN,
   type CharacterCatalog,
 } from "@/features/character-sheet/types/character.types";
-
-const selectClassName =
-  "mt-1.5 min-h-11 w-full rounded-lg border border-border bg-background/50 px-3 py-2 text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-50";
 
 export function CreateCharacterForm() {
   const router = useRouter();
@@ -80,14 +80,17 @@ export function CreateCharacterForm() {
   };
 
   const catalogReady = catalog !== null;
+  const selectClassName = "mt-1.5 disabled:opacity-50";
 
   return (
-    <FadeIn className="rounded-2xl border border-border bg-surface/50 p-6">
+    <FadeIn className="editorial-surface rounded-lg p-6">
       <Link
         href="/ficha"
-        className="text-sm text-brand transition-colors hover:text-brand-hover"
+        transitionTypes={["nav-back"]}
+        className="inline-flex items-center gap-1.5 text-sm text-brand transition-colors hover:text-brand-hover"
       >
-        ← Voltar às fichas
+        <ArrowLeft className="size-4" aria-hidden />
+        Voltar às fichas
       </Link>
 
       <h1 className="mt-4 font-serif text-2xl font-semibold text-foreground">
@@ -99,16 +102,12 @@ export function CreateCharacterForm() {
       </p>
 
       {catalogError ? (
-        <p className="mt-5 rounded-lg border border-danger/30 bg-danger-surface px-4 py-3 text-sm text-danger" role="alert">
-          {catalogError}
-        </p>
+        <Alert variant="error" className="mt-5">{catalogError}</Alert>
       ) : null}
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
         {error ? (
-          <p className="rounded-lg border border-danger/30 bg-danger-surface px-4 py-3 text-sm text-danger" role="alert">
-            {error}
-          </p>
+          <Alert variant="error">{error}</Alert>
         ) : null}
 
         <div>
@@ -128,7 +127,7 @@ export function CreateCharacterForm() {
 
         <div>
           <Label htmlFor="character-species">Espécie</Label>
-          <select
+          <Select
             id="character-species"
             name="species_id"
             value={speciesId}
@@ -143,12 +142,12 @@ export function CreateCharacterForm() {
                 {item.name}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div>
           <Label htmlFor="character-background">Antecedente</Label>
-          <select
+          <Select
             id="character-background"
             name="background_id"
             value={backgroundId}
@@ -163,12 +162,12 @@ export function CreateCharacterForm() {
                 {item.name}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div>
           <Label htmlFor="character-class">Classe (nível 1)</Label>
-          <select
+          <Select
             id="character-class"
             name="class_id"
             value={classId}
@@ -183,16 +182,23 @@ export function CreateCharacterForm() {
                 {item.name}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-          <Button type="submit" loading={loading} disabled={!catalogReady} className="sm:!w-auto">
+          <Button
+            type="submit"
+            loading={loading}
+            disabled={!catalogReady}
+            icon={<Sparkles className="size-4" />}
+            className="sm:!w-auto"
+          >
             Criar personagem
           </Button>
           <Button
             type="button"
             variant="ghost"
+            icon={<X className="size-4" />}
             className="sm:!w-auto"
             disabled={loading}
             onClick={() => router.push("/ficha")}

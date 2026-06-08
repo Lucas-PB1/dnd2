@@ -49,10 +49,10 @@ export function GoogleSignInForm() {
             <Button
               type="button"
               variant="google"
+              icon={<GoogleIcon />}
               onClick={() => startGoogleLogin(next)}
               aria-label="Continuar com Google"
             >
-              <GoogleIcon />
               Continuar com Google
             </Button>
           </motion.div>

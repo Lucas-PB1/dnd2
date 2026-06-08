@@ -4,7 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
+import { CalendarDays, Eye, Pencil, Trash2 } from "lucide-react";
+import { Alert } from "@/components/ui/Alert";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { deleteCharacter } from "@/features/character-sheet/services/sheet.service";
 import type { CharacterSummary } from "@/features/character-sheet/types/character.types";
 
@@ -31,19 +35,16 @@ function formatClasses(character: CharacterSummary): string {
 export function CharacterCard({ character, onDeleted }: CharacterCardProps) {
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleDelete = async () => {
-    const confirmed = window.confirm(
-      `Excluir ${character.name}? Esta ação não pode ser desfeita.`,
-    );
-    if (!confirmed) return;
-
     setDeleting(true);
     setError(null);
 
     try {
       await deleteCharacter(character.id);
+      setConfirmOpen(false);
       onDeleted?.(character.id);
       router.refresh();
     } catch (err) {
@@ -59,19 +60,20 @@ export function CharacterCard({ character, onDeleted }: CharacterCardProps) {
     <motion.article
       whileHover={{ y: -2 }}
       transition={{ duration: 0.2 }}
-      className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-surface/40 transition-colors hover:border-border-strong hover:bg-surface/55"
+      className="editorial-card editorial-card-interactive flex h-full min-w-0 flex-col overflow-hidden rounded-lg"
     >
       <Link
         href={`/ficha/${character.id}`}
+        transitionTypes={["nav-forward"]}
         className="block min-w-0 flex-1 p-5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
       >
         <div className="flex items-start justify-between gap-4">
           <h2 className="font-serif text-lg font-semibold text-foreground">
             {character.name}
           </h2>
-          <span className="shrink-0 rounded-full border border-border-strong bg-surface/60 px-2.5 py-0.5 text-xs font-medium text-brand-soft">
+          <Badge tone="accent">
             Nível {character.level}
-          </span>
+          </Badge>
         </div>
 
         <p className="mt-3 text-sm text-muted">
@@ -84,41 +86,60 @@ export function CharacterCard({ character, onDeleted }: CharacterCardProps) {
           {formatClasses(character)}
         </p>
 
-        <p className="mt-4 text-xs text-muted-subtle">
+        <p className="mt-4 inline-flex items-center gap-1 text-xs text-muted-subtle">
+          <CalendarDays className="size-3.5" aria-hidden />
           Atualizado em {formatDate(character.updated_at)}
         </p>
       </Link>
 
-      <footer className="flex flex-wrap items-center gap-2 border-t border-border/80 bg-surface/25 px-4 py-3">
+      <footer className="flex flex-wrap items-center gap-2 border-t border-border/80 bg-background/25 px-4 py-3">
         <Link
           href={`/ficha/${character.id}`}
-          className="inline-flex min-h-11 w-auto items-center justify-center rounded-lg border border-border-strong bg-surface/60 px-4 py-2 text-sm font-medium text-brand-soft transition-colors hover:border-brand/60 hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+          transitionTypes={["nav-forward"]}
+          className="inline-flex min-h-11 w-auto items-center justify-center gap-2 rounded-lg border border-border-strong bg-surface/60 px-4 py-2 text-sm font-medium text-brand-soft transition-[background-color,border-color,color,transform] hover:-translate-y-0.5 hover:border-brand/60 hover:bg-surface-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
         >
+          <Eye className="size-4" aria-hidden />
           Ver ficha
         </Link>
         <Link
           href={`/ficha/${character.id}`}
-          className="inline-flex min-h-11 w-auto items-center justify-center rounded-lg px-4 py-2 text-sm font-medium text-brand-soft/80 transition-colors hover:bg-surface-elevated/60 hover:text-brand-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+          transitionTypes={["nav-forward"]}
+          className="inline-flex min-h-11 w-auto items-center justify-center gap-2 rounded-lg border border-transparent px-4 py-2 text-sm font-medium text-brand-soft/80 transition-[background-color,border-color,color,transform] hover:-translate-y-0.5 hover:border-border hover:bg-surface-elevated/70 hover:text-brand-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
         >
+          <Pencil className="size-4" aria-hidden />
           Editar
         </Link>
         <Button
           type="button"
-          variant="ghost"
+          variant="danger"
           size="md"
-          className="w-auto! text-danger hover:bg-danger-surface hover:text-danger"
+          fullWidth={false}
+          icon={<Trash2 className="size-4" />}
+          className="w-auto!"
           loading={deleting}
-          onClick={handleDelete}
+          onClick={() => setConfirmOpen(true)}
         >
           Excluir
         </Button>
       </footer>
 
       {error ? (
-        <p className="px-4 pb-3 text-xs text-danger" role="alert">
-          {error}
-        </p>
+        <div className="px-4 pb-3">
+          <Alert variant="error" className="px-3 py-2 text-xs">{error}</Alert>
+        </div>
       ) : null}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title={`Excluir ${character.name}?`}
+        description="Esta ação não pode ser desfeita e a ficha será removida da sua lista."
+        confirmLabel="Excluir ficha"
+        loading={deleting}
+        onConfirm={handleDelete}
+        onClose={() => {
+          if (!deleting) setConfirmOpen(false);
+        }}
+      />
     </motion.article>
   );
 }

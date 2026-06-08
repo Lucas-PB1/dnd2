@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowLeft, Crown } from "lucide-react";
 import { FadeIn } from "@/components/motion";
+import { Badge } from "@/components/ui/Badge";
+import { Surface } from "@/components/ui/Surface";
 import { CampaignMembersPanel } from "@/features/campaign/components/CampaignMembersPanel";
 import type { CampaignDetail } from "@/features/campaign/types/campaign.types";
 
@@ -19,9 +22,11 @@ export function CampanhaDetailView({
       <FadeIn>
         <Link
           href="/campanha"
-          className="text-sm text-brand transition-colors hover:text-brand-hover"
+          transitionTypes={["nav-back"]}
+          className="inline-flex items-center gap-1.5 text-sm text-brand transition-colors hover:text-brand-hover"
         >
-          ← Voltar às campanhas
+          <ArrowLeft className="size-4" aria-hidden />
+          Voltar às campanhas
         </Link>
       </FadeIn>
 
@@ -34,9 +39,10 @@ export function CampanhaDetailView({
             {campaign.name}
           </h1>
           {campaign.is_owner ? (
-            <span className="rounded-full border border-brand/30 bg-brand-glow/40 px-3 py-1 text-xs font-medium text-brand-soft">
+            <Badge tone="brand" className="gap-1">
+              <Crown className="size-3" aria-hidden />
               Você é o dono
-            </span>
+            </Badge>
           ) : null}
         </div>
       </FadeIn>
@@ -56,13 +62,13 @@ export function CampanhaDetailView({
       />
 
       <FadeIn delay={0.24} className="mt-6">
-        <div className="rounded-2xl border border-dashed border-border-strong bg-surface/20 p-6">
+        <Surface tone="dashed" className="p-6">
           <h2 className="text-sm font-medium text-muted">Em breve</h2>
           <ul className="mt-2 space-y-1 text-sm text-muted-subtle">
             <li>Vincular fichas de personagem à campanha</li>
             <li>Iniciar combates e sessões</li>
           </ul>
-        </div>
+        </Surface>
       </FadeIn>
     </article>
   );

@@ -1,6 +1,8 @@
 "use client";
 
 import type { KeyboardEvent, ReactNode } from "react";
+import { Check } from "lucide-react";
+import { fieldControlClass } from "@/components/ui/fieldStyles";
 import { BuilderInfoButton } from "@/features/character-builder/components/shared/BuilderInfoButton";
 import { BUILDER_STEPS } from "@/features/character-builder/types/builder.types";
 
@@ -16,23 +18,14 @@ function CardSelectSurface({
   className?: string;
   children: ReactNode;
 }) {
-  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      onClick();
-    }
-  };
-
   return (
-    <div
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
       onClick={onClick}
-      onKeyDown={handleKeyDown}
-      className={`cursor-pointer ${focusRingClass} ${className}`}
+      className={`block cursor-pointer ${focusRingClass} ${className}`}
     >
       {children}
-    </div>
+    </button>
   );
 }
 
@@ -60,12 +53,12 @@ export function BuilderStepper({ currentStep }: BuilderStepperProps) {
                     active
                       ? "bg-brand text-on-brand"
                       : done
-                        ? "bg-brand/20 text-brand"
+                        ? "bg-accent-muted/35 text-accent-soft"
                         : "bg-surface-elevated text-muted"
                   }`}
                   aria-current={active ? "step" : undefined}
                 >
-                  {done ? "✓" : index + 1}
+                  {done ? <Check className="size-4" aria-hidden /> : index + 1}
                 </span>
                 <span
                   className={`mt-1.5 hidden text-xs font-medium sm:block ${
@@ -120,12 +113,12 @@ export function SelectionCard({
   facts,
   onInfo,
 }: SelectionCardProps) {
-  const shellClass = `w-full rounded-xl border text-left transition-colors ${
+  const shellClass = `w-full rounded-lg border text-left shadow-[inset_0_1px_0_rgb(255_255_255/0.035)] transition-[background-color,border-color,box-shadow] ${
     compact ? "p-3" : "p-4"
   } ${
     selected
-      ? "border-brand bg-brand/10"
-      : "border-border bg-surface/40 hover:border-brand/40 hover:bg-surface/70"
+      ? "border-brand/50 bg-brand-glow/45"
+      : "border-border bg-surface/40 hover:border-brand/35 hover:bg-surface/62 hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.045)]"
   }`;
 
   const body = (
@@ -137,8 +130,8 @@ export function SelectionCard({
           {title}
         </p>
         {selected ? (
-          <span className="shrink-0 rounded-full bg-brand px-1.5 py-0.5 text-[10px] font-medium text-on-brand">
-            ✓
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-brand text-on-brand">
+            <Check className="size-3.5" aria-hidden />
           </span>
         ) : null}
       </div>
@@ -154,34 +147,39 @@ export function SelectionCard({
 
   if (onInfo) {
     return (
-      <div className={shellClass}>
-        <div className="flex items-start gap-2">
-          <CardSelectSurface onClick={onSelect} className="min-w-0 flex-1 text-left">
+      <div className="relative">
+        <CardSelectSurface
+          onClick={onSelect}
+          className={`${shellClass} pr-12`}
+        >
+          <div className="min-w-0 text-left">
             {body}
-          </CardSelectSurface>
+          </div>
+
+          {facts && facts.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {facts.map((fact) => (
+                <span
+                  key={`${fact.label}-${fact.value}`}
+                  className="rounded-md border border-border-muted bg-surface-elevated/80 px-2 py-0.5 text-xs text-muted-subtle"
+                >
+                  <span className="text-muted">{fact.label}:</span> {fact.value}
+                </span>
+              ))}
+            </div>
+          ) : null}
+
+          {meta ? (
+            <div
+              className={`text-muted-subtle ${compact ? "mt-1.5 text-[10px]" : "mt-3 text-xs"}`}
+            >
+              {meta}
+            </div>
+          ) : null}
+        </CardSelectSurface>
+        <div className="absolute right-3 top-3">
           <BuilderInfoButton label={title} onClick={onInfo} />
         </div>
-
-        {facts && facts.length > 0 ? (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {facts.map((fact) => (
-              <span
-                key={`${fact.label}-${fact.value}`}
-                className="rounded-md bg-surface-elevated/80 px-2 py-0.5 text-xs text-muted-subtle"
-              >
-                <span className="text-muted">{fact.label}:</span> {fact.value}
-              </span>
-            ))}
-          </div>
-        ) : null}
-
-        {meta ? (
-          <div
-            className={`text-muted-subtle ${compact ? "mt-1.5 text-[10px]" : "mt-3 text-xs"}`}
-          >
-            {meta}
-          </div>
-        ) : null}
       </div>
     );
   }
@@ -195,7 +193,7 @@ export function SelectionCard({
           {facts.map((fact) => (
             <span
               key={`${fact.label}-${fact.value}`}
-              className="rounded-md bg-surface-elevated/80 px-2 py-0.5 text-xs text-muted-subtle"
+              className="rounded-md border border-border-muted bg-surface-elevated/80 px-2 py-0.5 text-xs text-muted-subtle"
             >
               <span className="text-muted">{fact.label}:</span> {fact.value}
             </span>
@@ -239,9 +237,9 @@ export function ChipToggle({
   const sizeClass = chipSizeClasses[size];
   const widthClass = size === "sm" ? "w-full min-w-0" : "";
   const stateClass = selected
-    ? "border-brand bg-brand/15 text-brand-soft"
-    : "border-border text-muted hover:border-brand/40 hover:text-foreground";
-  const baseClass = `${sizeClass} ${widthClass} transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-40`;
+    ? "border-brand/45 bg-brand-glow/55 text-brand-soft shadow-[inset_0_1px_0_rgb(255_255_255/0.05)]"
+    : "border-border bg-surface/30 text-muted hover:border-border-strong hover:bg-surface/60 hover:text-foreground";
+  const baseClass = `${sizeClass} ${widthClass} transition-[background-color,border-color,color,transform,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-40`;
 
   const handleChipKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (disabled) return;
@@ -294,7 +292,7 @@ export function BuilderSectionTabs({
     <div
       role="tablist"
       aria-label="Seções de escolha"
-      className="flex shrink-0 gap-1 overflow-x-auto border-b border-border pb-px"
+      className="scrollbar-subtle flex shrink-0 gap-1 overflow-x-auto border-b border-border pb-px"
     >
       {tabs.map((tab) => {
         const active = tab.id === activeId;
@@ -305,15 +303,15 @@ export function BuilderSectionTabs({
             role="tab"
             aria-selected={active}
             onClick={() => onChange(tab.id)}
-            className={`shrink-0 rounded-t-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+            className={`shrink-0 rounded-t-lg border px-3 py-2 text-sm font-medium transition-[background-color,border-color,color] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
               active
-                ? "border border-b-0 border-border bg-surface/60 text-foreground"
-                : "text-muted hover:text-foreground"
+                ? "border-border border-b-transparent bg-surface/70 text-foreground"
+                : "border-transparent text-muted hover:border-border hover:text-foreground"
             }`}
           >
             {tab.label}
             {tab.badge ? (
-              <span className="ml-1.5 rounded-full bg-brand/15 px-1.5 py-0.5 text-[10px] text-brand">
+              <span className="ml-1.5 rounded-full border border-brand/20 bg-brand-glow/45 px-1.5 py-0.5 text-[10px] text-brand-soft">
                 {tab.badge}
               </span>
             ) : null}
@@ -343,7 +341,10 @@ export function BuilderStepFrame({
           <p className="mt-1 line-clamp-1 text-sm text-muted">{hint}</p>
         ) : null}
       </header>
-      <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain">
+      <div
+        data-builder-scroll-area="true"
+        className="scrollbar-subtle min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain"
+      >
         {children}
       </div>
     </div>
@@ -360,4 +361,4 @@ export const ABILITY_LABELS: Record<string, string> = {
 };
 
 export const selectClassName =
-  "mt-1.5 min-h-11 w-full rounded-lg border border-border bg-background/50 px-3 py-2 text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-50";
+  fieldControlClass({ className: "mt-1.5 disabled:opacity-50" });

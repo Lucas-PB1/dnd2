@@ -1,23 +1,36 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  type ReactNode,
+} from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { X } from "lucide-react";
+import { TriangleAlert, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
-type BuilderDetailModalProps = {
+type ConfirmDialogProps = {
   open: boolean;
   title: string;
+  description: ReactNode;
+  confirmLabel: string;
+  cancelLabel?: string;
+  loading?: boolean;
+  onConfirm: () => void;
   onClose: () => void;
-  children: ReactNode;
 };
 
-export function BuilderDetailModal({
+export function ConfirmDialog({
   open,
   title,
+  description,
+  confirmLabel,
+  cancelLabel = "Cancelar",
+  loading,
+  onConfirm,
   onClose,
-  children,
-}: BuilderDetailModalProps) {
+}: ConfirmDialogProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -79,7 +92,7 @@ export function BuilderDetailModal({
           <button
             type="button"
             className="absolute inset-0 bg-background/82 backdrop-blur-md"
-            aria-label="Fechar detalhes"
+            aria-label="Fechar confirmação"
             onClick={onClose}
           />
           <motion.div
@@ -87,34 +100,61 @@ export function BuilderDetailModal({
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className="editorial-surface relative z-10 flex max-h-[min(85dvh,720px)] w-full max-w-2xl flex-col overflow-hidden rounded-lg"
+            className="editorial-surface relative z-10 w-full max-w-md overflow-hidden rounded-lg p-5"
             initial={{ opacity: 0, y: 18, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.98 }}
             transition={{ duration: 0.22 }}
           >
-            <header className="flex shrink-0 items-start justify-between gap-4 border-b border-border px-5 py-4">
-              <h2
-                id={titleId}
-                className="font-serif text-lg font-semibold text-foreground"
-              >
-                {title}
-              </h2>
+            <div className="flex items-start gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full border border-danger/35 bg-danger-surface text-danger">
+                <TriangleAlert className="size-5" aria-hidden />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h2
+                  id={titleId}
+                  className="font-serif text-lg font-semibold text-foreground"
+                >
+                  {title}
+                </h2>
+                <div className="mt-2 text-sm leading-relaxed text-muted">
+                  {description}
+                </div>
+              </div>
               <Button
                 ref={closeRef}
                 type="button"
                 variant="ghost"
                 size="md"
                 fullWidth={false}
-                className="shrink-0 px-2"
+                className="min-h-9 px-2"
+                disabled={loading}
                 onClick={onClose}
                 aria-label="Fechar"
               >
                 <X className="size-4" aria-hidden />
               </Button>
-            </header>
-            <div className="scrollbar-subtle overflow-y-auto px-5 py-4 text-sm leading-relaxed text-muted">
-              {children}
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                fullWidth={false}
+                disabled={loading}
+                onClick={onClose}
+              >
+                {cancelLabel}
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                fullWidth={false}
+                loading={loading}
+                onClick={onConfirm}
+              >
+                {confirmLabel}
+              </Button>
             </div>
           </motion.div>
         </motion.div>

@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { Sparkles } from "lucide-react";
 import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
+import { Surface } from "@/components/ui/Surface";
 import type { Campaign } from "@/features/campaign/types/campaign.types";
 import { CampaignCard } from "@/features/campaign/components/CampaignCard";
 import { CreateCampaignForm } from "@/features/campaign/components/CreateCampaignForm";
@@ -51,19 +53,25 @@ export function CampanhaView({
         </Stagger>
       ) : (
         <FadeIn delay={0.2} className="mt-10">
-          <div className="rounded-2xl border border-dashed border-border-strong bg-surface/40 p-8 text-center">
-            <p className="text-lg text-foreground/90">Nenhuma campanha ainda</p>
+          <Surface tone="dashed" className="p-8 text-center">
+            <span className="mx-auto flex size-11 items-center justify-center rounded-lg border border-accent/25 bg-accent-muted/20 text-accent-soft">
+              <Sparkles className="size-5" aria-hidden />
+            </span>
+            <p className="mt-4 text-lg text-foreground/90">
+              Nenhuma campanha ainda
+            </p>
             <p className="mt-2 text-sm text-muted-subtle">
               Crie sua primeira mesa para começar a organizar personagens e
               sessões.
             </p>
             <Link
               href="/"
+              transitionTypes={["nav-back"]}
               className="mt-6 inline-block text-sm text-brand transition-colors hover:text-brand-hover"
             >
               Voltar ao início
             </Link>
-          </div>
+          </Surface>
         </FadeIn>
       )}
     </section>

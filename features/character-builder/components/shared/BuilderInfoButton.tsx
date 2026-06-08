@@ -1,6 +1,7 @@
 "use client";
 
 import type { MouseEvent } from "react";
+import { Info } from "lucide-react";
 
 type BuilderInfoButtonProps = {
   label: string;
@@ -19,9 +20,9 @@ export function BuilderInfoButton({ label, onClick }: BuilderInfoButtonProps) {
       type="button"
       onClick={handleClick}
       aria-label={`Detalhes: ${label}`}
-      className="flex size-7 shrink-0 items-center justify-center rounded-full border border-border bg-surface-elevated/80 text-xs font-semibold text-muted transition-colors hover:border-brand/50 hover:text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+      className="flex size-7 shrink-0 items-center justify-center rounded-full border border-border bg-surface-elevated/80 text-muted transition-[background-color,border-color,color] hover:border-accent/50 hover:bg-accent-muted/20 hover:text-accent-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
     >
-      i
+      <Info className="size-3.5" aria-hidden />
     </button>
   );
 }

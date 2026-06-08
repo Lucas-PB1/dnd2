@@ -86,6 +86,19 @@ export type BuilderExpertiseGroup = {
   notes: string | null;
 };
 
+export type BuilderClassFeature = {
+  trait_id: number;
+  name: string;
+  description: string | null;
+  level_required: number;
+};
+
+export type BuilderSubclassSummary = {
+  id: number;
+  name: string;
+  description: string | null;
+};
+
 export type BuilderClassEntry = {
   id: number;
   name: string;
@@ -97,6 +110,8 @@ export type BuilderClassEntry = {
   tool_choices: BuilderToolChoiceGroup[];
   spellcasting: BuilderClassSpellcasting | null;
   expertise_choices: BuilderExpertiseGroup[];
+  features: BuilderClassFeature[];
+  subclasses: BuilderSubclassSummary[];
 };
 
 export type BuilderSpeciesEntry = {
@@ -179,6 +194,7 @@ export type BuilderBackgroundEntry = {
   description: string | null;
   origin_feat_id: number | null;
   origin_feat_name: string | null;
+  origin_feat_description: string | null;
   origin_feat_selection_key: string | null;
   ability_options: AbilityKey[];
   skill_proficiencies: BuilderSkillOption[];
@@ -212,6 +228,8 @@ export type BuilderClassSummaryEntry = {
   armor: string[];
   spellcasting?: BuilderClassSpellcasting | null;
   expertise_choices?: BuilderExpertiseGroup[];
+  features?: BuilderClassFeature[];
+  subclasses?: BuilderSubclassSummary[];
 };
 
 export type BuilderSpeciesSummaryEntry = {
@@ -227,7 +245,9 @@ export type BuilderBackgroundSummaryEntry = {
   id: number;
   name: string;
   description: string | null;
+  origin_feat_id: number | null;
   origin_feat_name: string | null;
+  origin_feat_description: string | null;
   ability_options: AbilityKey[];
 };
 

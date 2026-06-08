@@ -2,9 +2,12 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Plus, X } from "lucide-react";
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import { Textarea } from "@/components/ui/Textarea";
 import { FadeIn } from "@/components/motion";
 import { createCampaign } from "@/features/campaign/services/campaign.service";
 import {
@@ -64,6 +67,7 @@ export function CreateCampaignForm({ onCreated }: CreateCampaignFormProps) {
     return (
       <Button
         type="button"
+        icon={<Plus className="size-4" />}
         className="sm:w-auto! sm:min-w-44"
         onClick={() => setOpen(true)}
       >
@@ -73,7 +77,7 @@ export function CreateCampaignForm({ onCreated }: CreateCampaignFormProps) {
   }
 
   return (
-    <FadeIn className="rounded-2xl border border-border bg-surface/50 p-6">
+    <FadeIn className="editorial-surface rounded-lg p-6">
       <h2 className="font-serif text-xl font-semibold text-foreground">
         Nova campanha
       </h2>
@@ -83,9 +87,7 @@ export function CreateCampaignForm({ onCreated }: CreateCampaignFormProps) {
 
       <form onSubmit={handleSubmit} className="mt-5 space-y-4" noValidate>
         {error ? (
-          <p className="rounded-lg border border-danger/30 bg-danger-surface px-4 py-3 text-sm text-danger" role="alert">
-            {error}
-          </p>
+          <Alert variant="error">{error}</Alert>
         ) : null}
 
         <div>
@@ -104,24 +106,30 @@ export function CreateCampaignForm({ onCreated }: CreateCampaignFormProps) {
 
         <div>
           <Label htmlFor="campaign-description">Descrição (opcional)</Label>
-          <textarea
+          <Textarea
             id="campaign-description"
             name="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
             placeholder="Sinopse, tom da mesa, regras da casa…"
-            className="mt-1.5 min-h-24 w-full rounded-lg border border-border bg-background/50 px-3 py-2 text-foreground placeholder:text-muted-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+            className="mt-1.5"
           />
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row">
-          <Button type="submit" loading={loading} className="w-auto!">
+          <Button
+            type="submit"
+            loading={loading}
+            icon={<Plus className="size-4" />}
+            className="w-auto!"
+          >
             Criar campanha
           </Button>
           <Button
             type="button"
             variant="ghost"
+            icon={<X className="size-4" />}
             className="w-auto!"
             disabled={loading}
             onClick={() => {

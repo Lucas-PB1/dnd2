@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
+import { Alert } from "@/components/ui/Alert";
 import {
   EASE_OUT,
   DURATION,
@@ -29,7 +30,8 @@ export function AuthCard({ title, subtitle, children, footer }: AuthCardProps) {
       <motion.div className="mb-8 text-center" variants={staggerItem}>
         <Link
           href="/"
-          className="inline-block text-xs font-semibold uppercase tracking-[0.35em] text-brand/80 transition-colors hover:text-brand"
+          transitionTypes={["nav-back"]}
+          className="inline-block text-xs font-semibold uppercase tracking-[0.35em] text-brand/80 transition-colors hover:text-brand-hover"
         >
           D&amp;D 2024
         </Link>
@@ -42,7 +44,7 @@ export function AuthCard({ title, subtitle, children, footer }: AuthCardProps) {
       </motion.div>
 
       <motion.div
-        className="rounded-2xl border border-border bg-surface-overlay p-6 shadow-2xl shadow-black/40 backdrop-blur-sm sm:p-8"
+        className="editorial-surface rounded-lg p-6 sm:p-8"
         variants={scaleIn}
       >
         {children}
@@ -67,21 +69,14 @@ export function AuthAlert({
   variant: "error" | "success" | "info";
   message: string;
 }) {
-  const styles = {
-    error: "border-danger/30 bg-danger-surface text-danger",
-    success: "border-success/30 bg-success-surface text-success",
-    info: "border-border-strong bg-brand-glow/30 text-brand-soft",
-  } as const;
-
   return (
     <motion.div
-      role={variant === "error" ? "alert" : "status"}
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: "auto" }}
       transition={{ duration: DURATION.fast, ease: EASE_OUT }}
-      className={`overflow-hidden rounded-lg border px-4 py-3 text-sm ${styles[variant]}`}
+      className="overflow-hidden"
     >
-      {message}
+      <Alert variant={variant}>{message}</Alert>
     </motion.div>
   );
 }

@@ -1,13 +1,13 @@
 export const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
 export const DURATION = {
-  fast: 0.25,
-  normal: 0.45,
-  slow: 0.6,
+  fast: 0.18,
+  normal: 0.32,
+  slow: 0.42,
 } as const;
 
 export const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 14 },
   visible: (delay = 0) => ({
     opacity: 1,
     y: 0,
@@ -24,7 +24,7 @@ export const fadeIn = {
 };
 
 export const scaleIn = {
-  hidden: { opacity: 0, y: 24, scale: 0.98 },
+  hidden: { opacity: 0, y: 16, scale: 0.98 },
   visible: {
     opacity: 1,
     y: 0,
@@ -37,12 +37,12 @@ export const staggerContainer = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.06 },
+    transition: { staggerChildren: 0.055, delayChildren: 0.04 },
   },
 };
 
 export const staggerItem = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: 12 },
   visible: {
     opacity: 1,
     y: 0,
@@ -51,7 +51,7 @@ export const staggerItem = {
 };
 
 export const pageEnter = {
-  hidden: { opacity: 0, y: 12 },
+  hidden: { opacity: 0, y: 8 },
   visible: {
     opacity: 1,
     y: 0,

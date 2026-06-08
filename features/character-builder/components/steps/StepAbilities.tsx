@@ -1,5 +1,6 @@
 "use client";
 
+import { Dice5, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import {
   ABILITY_LABELS,
@@ -78,7 +79,7 @@ function AbilityBoard({
         return (
           <div
             key={key}
-            className="min-w-0 rounded-xl border border-border bg-surface/40 p-3"
+            className="min-w-0 rounded-lg border border-border bg-surface/40 p-3 shadow-[inset_0_1px_0_rgb(255_255_255/0.035)]"
           >
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0" title={ABILITY_LABELS[key]}>
@@ -152,7 +153,7 @@ function RollAbilityBoard({
         return (
           <div
             key={key}
-            className="min-w-0 rounded-xl border border-border bg-surface/40 p-3"
+            className="min-w-0 rounded-lg border border-border bg-surface/40 p-3 shadow-[inset_0_1px_0_rgb(255_255_255/0.035)]"
           >
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0" title={ABILITY_LABELS[key]}>
@@ -230,7 +231,7 @@ function PointBuyBoard({
           return (
             <div
               key={key}
-              className="min-w-0 rounded-xl border border-border bg-surface/40 p-3"
+              className="min-w-0 rounded-lg border border-border bg-surface/40 p-3 shadow-[inset_0_1px_0_rgb(255_255_255/0.035)]"
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0" title={ABILITY_LABELS[key]}>
@@ -250,7 +251,9 @@ function PointBuyBoard({
                   type="button"
                   variant="secondary"
                   size="md"
-                  className="w-auto! min-w-10"
+                  fullWidth={false}
+                  className="min-w-10 px-3"
+                  aria-label={`Diminuir ${ABILITY_LABELS[key]}`}
                   onClick={() => {
                     const next = adjustPointBuyScore(
                       state.ability_assignment,
@@ -260,13 +263,15 @@ function PointBuyBoard({
                     if (next) onChange({ ...state, ability_assignment: next });
                   }}
                 >
-                  −
+                  <Minus className="size-4" aria-hidden />
                 </Button>
                 <Button
                   type="button"
                   variant="secondary"
                   size="md"
-                  className="w-auto! min-w-10"
+                  fullWidth={false}
+                  className="min-w-10 px-3"
+                  aria-label={`Aumentar ${ABILITY_LABELS[key]}`}
                   onClick={() => {
                     const next = adjustPointBuyScore(
                       state.ability_assignment,
@@ -276,7 +281,7 @@ function PointBuyBoard({
                     if (next) onChange({ ...state, ability_assignment: next });
                   }}
                 >
-                  +
+                  <Plus className="size-4" aria-hidden />
                 </Button>
               </div>
             </div>
@@ -300,7 +305,9 @@ function RollToolbar({
         type="button"
         variant="secondary"
         size="md"
-        className="w-auto! shrink-0"
+        fullWidth={false}
+        icon={<Dice5 className="size-4" />}
+        className="shrink-0"
         disabled={state.roll_sets.length >= MAX_ROLL_ATTEMPTS}
         onClick={() => onChange(addRollSet(state))}
       >
@@ -317,10 +324,10 @@ function RollToolbar({
             type="button"
             disabled={!valid}
             onClick={() => onChange(selectRollSet(state, index))}
-            className={`shrink-0 rounded-lg border px-3 py-1.5 text-left text-sm transition-colors disabled:opacity-50 ${
+            className={`shrink-0 rounded-lg border px-3 py-1.5 text-left text-sm transition-[background-color,border-color,color] disabled:opacity-50 ${
               selected
-                ? "border-brand bg-brand/10"
-                : "border-border hover:border-brand/40"
+                ? "border-brand/45 bg-brand-glow/45"
+                : "border-border bg-surface/30 hover:border-brand/35 hover:bg-surface/55"
             }`}
           >
             <span className="font-medium">#{index + 1}</span>{" "}
@@ -354,10 +361,10 @@ export function StepAbilities({ state, onChange }: StepAbilitiesProps) {
               key={method.id}
               type="button"
               onClick={() => onChange(setAbilityMethod(state, method.id))}
-              className={`min-w-0 rounded-xl border p-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+              className={`min-w-0 rounded-lg border p-3 text-left shadow-[inset_0_1px_0_rgb(255_255_255/0.035)] transition-[background-color,border-color,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
                 state.ability_method === method.id
-                  ? "border-brand bg-brand/10"
-                  : "border-border bg-surface/40 hover:border-brand/40"
+                  ? "border-brand/50 bg-brand-glow/45"
+                  : "border-border bg-surface/40 hover:border-brand/35 hover:bg-surface/62"
               }`}
             >
               <p className="text-sm font-medium text-foreground">

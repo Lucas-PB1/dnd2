@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
 import { BuilderShell } from "@/features/character-builder/components/shell/BuilderShell";
 import { StepAbilities } from "@/features/character-builder/components/steps/StepAbilities";
 import { StepSpecies } from "@/features/character-builder/components/steps/StepSpecies";
@@ -59,16 +61,23 @@ export function CharacterBuilderWizard() {
   }, []);
 
   useEffect(() => {
-    setDetails(null);
-    setDetailsKey(null);
-    setState((prev) => ({
-      ...prev,
-      equipment_option_key: null,
-      cantrip_spell_ids: [],
-      spellbook_spell_ids: [],
-      prepared_spell_ids: [],
-      expertise_by_trait: {},
-    }));
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      setDetails(null);
+      setDetailsKey(null);
+      setState((prev) => ({
+        ...prev,
+        equipment_option_key: null,
+        cantrip_spell_ids: [],
+        spellbook_spell_ids: [],
+        prepared_spell_ids: [],
+        expertise_by_trait: {},
+      }));
+    });
+    return () => {
+      active = false;
+    };
   }, [state.class_id, state.species_id, state.background_id]);
 
   useEffect(() => {
@@ -79,7 +88,15 @@ export function CharacterBuilderWizard() {
     );
     if (!background) return;
 
-    setState((prev) => applyLockedOriginFeatToState(prev, background));
+    let active = true;
+    queueMicrotask(() => {
+      if (active) {
+        setState((prev) => applyLockedOriginFeatToState(prev, background));
+      }
+    });
+    return () => {
+      active = false;
+    };
   }, [data, detailsKey, state.background_id]);
 
   const patchState = useCallback(
@@ -216,6 +233,20 @@ export function CharacterBuilderWizard() {
     (needsDetails && loadingDetails && !details?.details_loaded);
 
   const stepContent = useMemo(() => {
+    const catalogSkeleton = (
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 6 }, (_, index) => (
+          <div
+            key={index}
+            className="rounded-lg border border-border bg-surface/35 p-3"
+          >
+            <Skeleton className="h-5 w-1/2" />
+            <SkeletonText lines={2} className="mt-3" />
+          </div>
+        ))}
+      </div>
+    );
+
     switch (state.step) {
       case 0:
         return (
@@ -229,25 +260,21 @@ export function CharacterBuilderWizard() {
         );
       case 1:
         if (!data) {
-          return (
-            <p className="text-sm text-muted">Carregando espécies…</p>
-          );
+          return catalogSkeleton;
         }
         return (
           <StepSpecies data={data} state={state} onChange={patchState} />
         );
       case 2:
         if (!data) {
-          return (
-            <p className="text-sm text-muted">Carregando antecedentes…</p>
-          );
+          return catalogSkeleton;
         }
         return (
           <StepBackground data={data} state={state} onChange={patchState} />
         );
       case 3:
         if (!data) {
-          return <p className="text-sm text-muted">Carregando classes…</p>;
+          return catalogSkeleton;
         }
         return (
           <StepClass data={data} state={state} onChange={patchState} />
@@ -255,9 +282,15 @@ export function CharacterBuilderWizard() {
       case 4:
         if (stepBusy || !data?.details_loaded) {
           return (
-            <p className="text-sm text-muted">
-              Carregando perícias, magias, traços e equipamento…
-            </p>
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full max-w-sm" />
+              <SkeletonText lines={4} />
+              <div className="flex flex-wrap gap-2">
+                {Array.from({ length: 12 }, (_, index) => (
+                  <Skeleton key={index} className="h-9 w-28" />
+                ))}
+              </div>
+            </div>
           );
         }
         return (
@@ -283,6 +316,7 @@ export function CharacterBuilderWizard() {
         type="button"
         variant="ghost"
         size="md"
+        icon={<ArrowLeft className="size-4" />}
         className="w-auto!"
         disabled={state.step === 0 || submitting || loadingCatalog || loadingDetails}
         onClick={goBack}
@@ -293,6 +327,7 @@ export function CharacterBuilderWizard() {
         <Button
           type="button"
           size="md"
+          icon={<Sparkles className="size-4" />}
           loading={submitting}
           className="w-auto!"
           onClick={handleSubmit}
@@ -303,6 +338,8 @@ export function CharacterBuilderWizard() {
         <Button
           type="button"
           size="md"
+          icon={<ArrowRight className="size-4" />}
+          iconPosition="right"
           className="w-auto!"
           loading={loadingCatalog || loadingDetails}
           disabled={!canAdvance(data, state)}

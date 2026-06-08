@@ -77,7 +77,7 @@ export function BuilderPreviewPanel({ data, state }: BuilderPreviewPanelProps) {
   return (
     <aside
       aria-label="Prévia do personagem"
-      className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-surface/30"
+      className="editorial-card flex h-full min-w-0 flex-col overflow-hidden rounded-lg"
     >
       <header className="shrink-0 border-b border-border px-4 py-3">
         <p className="text-sm font-medium uppercase tracking-wide text-muted">
@@ -88,7 +88,7 @@ export function BuilderPreviewPanel({ data, state }: BuilderPreviewPanelProps) {
         </p>
       </header>
 
-      <div className="flex-1 space-y-4 overflow-y-auto px-4 py-3">
+      <div className="scrollbar-subtle flex-1 space-y-4 overflow-y-auto px-4 py-3">
         <dl className="space-y-2">
           <PreviewRow label="Espécie" value={species?.name ?? null} />
           {state.size ? (
@@ -157,7 +157,7 @@ export function BuilderPreviewPanel({ data, state }: BuilderPreviewPanelProps) {
                   <div
                     key={key}
                     title={ABILITY_LABELS[key]}
-                    className="min-w-0 rounded-lg bg-surface-elevated/80 px-2 py-2 text-center"
+                    className="min-w-0 rounded-lg border border-border-muted bg-surface-elevated/80 px-2 py-2 text-center shadow-[inset_0_1px_0_rgb(255_255_255/0.04)]"
                   >
                     <p className="truncate text-xs font-medium uppercase text-muted-subtle">
                       {key}
@@ -182,7 +182,7 @@ export function BuilderPreviewPanel({ data, state }: BuilderPreviewPanelProps) {
                 <div
                   key={key}
                   title={ABILITY_LABELS[key]}
-                  className="min-w-0 rounded-lg border border-brand/20 bg-brand/5 px-2 py-2 text-center"
+                  className="min-w-0 rounded-lg border border-accent/25 bg-accent-muted/15 px-2 py-2 text-center shadow-[inset_0_1px_0_rgb(255_255_255/0.04)]"
                 >
                   <p className="truncate text-xs font-medium uppercase text-muted-subtle">
                     {key}
@@ -190,7 +190,7 @@ export function BuilderPreviewPanel({ data, state }: BuilderPreviewPanelProps) {
                   <p className="text-base font-semibold tabular-nums text-foreground">
                     {abilities[key]}
                   </p>
-                  <p className="text-xs text-brand">
+                  <p className="text-xs text-accent-soft">
                     {formatModifier(abilities[key])}
                   </p>
                 </div>
