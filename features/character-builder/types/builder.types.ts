@@ -66,6 +66,15 @@ export type BuilderSpellOption = {
   school: string | null;
   requires_concentration: boolean;
   requires_ritual: boolean;
+  description: string | null;
+  casting_time?: string | null;
+  range_text?: string | null;
+  components?: string | null;
+  material_component?: string | null;
+  duration_text?: string | null;
+  save_attribute?: string | null;
+  attack_type?: string | null;
+  character_effect_summary?: string | null;
 };
 
 export type BuilderClassSpellcasting = {
@@ -97,6 +106,7 @@ export type BuilderSubclassSummary = {
   id: number;
   name: string;
   description: string | null;
+  features: BuilderClassFeature[];
 };
 
 export type BuilderClassEntry = {
@@ -152,6 +162,7 @@ export type BuilderEquipmentOption = {
 export type BuilderOriginFeatChoice = {
   trait_id: number;
   trait_name: string;
+  trait_description: string | null;
   option_group: string;
   choice_count: number;
   options: BuilderTraitOption[];
@@ -226,6 +237,7 @@ export type BuilderClassSummaryEntry = {
   saving_throws: string[];
   weapons: string[];
   armor: string[];
+  skill_choices?: BuilderSkillChoiceGroup[];
   spellcasting?: BuilderClassSpellcasting | null;
   expertise_choices?: BuilderExpertiseGroup[];
   features?: BuilderClassFeature[];
@@ -239,6 +251,7 @@ export type BuilderSpeciesSummaryEntry = {
   creature_type: string;
   size_options: string;
   base_speed: number;
+  traits: BuilderSpeciesTrait[];
 };
 
 export type BuilderBackgroundSummaryEntry = {

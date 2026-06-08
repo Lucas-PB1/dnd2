@@ -1,4 +1,4 @@
-import { SelectionCard } from "@/features/character-builder/components/shared/BuilderParts";
+import { SelectionOptionCard } from "@/features/character-builder/components/shared/BuilderParts";
 import type { BuilderBackgroundEntry } from "@/features/character-builder/types/builder.types";
 import type { ChoicesTabProps } from "./types";
 
@@ -46,7 +46,7 @@ export function ChoicesGearTab({
       ) : (
         <div className="grid gap-2 sm:grid-cols-2">
           {background.equipment_options.map((opt) => (
-            <SelectionCard
+            <SelectionOptionCard
               key={opt.option_key}
               compact
               title={equipmentCardTitle(opt.option_key, opt.label)}

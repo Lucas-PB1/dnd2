@@ -1,4 +1,4 @@
-import { ChipToggle, SelectionCard } from "@/features/character-builder/components/shared/BuilderParts";
+import { ChipToggle, SelectionOptionCard } from "@/features/character-builder/components/shared/BuilderParts";
 import type {
   BuilderBackgroundEntry,
   BuilderOriginFeat,
@@ -53,7 +53,7 @@ export function ChoicesFeatsTab({
           </p>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
             {visibleHumanOriginFeats(data, state).map((feat) => (
-              <SelectionCard
+              <SelectionOptionCard
                 key={feat.id}
                 compact
                 title={feat.name}
@@ -72,6 +72,7 @@ export function ChoicesFeatsTab({
           key={`human-${group.trait_id}-${group.option_group}`}
           sectionKey={`human-${group.trait_id}-${group.option_group}`}
           title={`${humanFeat.name}: ${group.trait_name}`}
+          traitDescription={group.trait_description}
           group={group}
           selections={state.human_origin_feat_trait_options}
           data={data}
@@ -108,6 +109,7 @@ export function ChoicesFeatsTab({
           key={`${group.trait_id}-${group.option_group}`}
           sectionKey={`${group.trait_id}-${group.option_group}`}
           title={`${background.origin_feat_name}: ${group.trait_name}`}
+          traitDescription={group.trait_description}
           group={group}
           selections={originFeatSelections}
           data={data}

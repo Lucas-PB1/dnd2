@@ -19,6 +19,7 @@ type TraitGroup = {
 type TraitOptionGroupSectionProps = {
   sectionKey: string;
   title: string;
+  traitDescription?: string | null;
   group: TraitGroup;
   selections: TraitOptionSelection[];
   data: CharacterBuilderData;
@@ -30,6 +31,27 @@ type TraitOptionGroupSectionProps = {
   ) => CharacterBuilderState;
   onOptionInfo?: (option: BuilderTraitOption) => void;
 };
+
+function traitSectionTitle(traitName: string, optionGroup: string): string {
+  const normalized = optionGroup.trim().toLowerCase();
+  const generic = new Set([
+    "ancestry",
+    "choice",
+    "options",
+    "option",
+    "type",
+    "variant",
+  ]);
+
+  if (
+    generic.has(normalized) ||
+    normalized === traitName.trim().toLowerCase()
+  ) {
+    return traitName;
+  }
+
+  return `${traitName} — ${optionGroup}`;
+}
 
 function selectionsInGroup(
   selections: TraitOptionSelection[],
@@ -45,6 +67,7 @@ function selectionsInGroup(
 export function TraitOptionGroupSection({
   sectionKey,
   title,
+  traitDescription,
   group,
   selections,
   data,
@@ -55,13 +78,22 @@ export function TraitOptionGroupSection({
 }: TraitOptionGroupSectionProps) {
   const inGroup = selectionsInGroup(selections, group);
 
+  const displayTitle = title.includes(":")
+    ? title
+    : traitSectionTitle(title, group.option_group);
+
   return (
     <section key={sectionKey}>
-      <p className="text-xs font-medium text-foreground">{title}</p>
-      {group.notes ? (
-        <p className="text-xs text-muted">{group.notes}</p>
+      <p className="text-xs font-medium text-foreground">{displayTitle}</p>
+      {traitDescription ? (
+        <p className="mt-1 text-xs leading-relaxed text-muted">
+          {traitDescription}
+        </p>
       ) : null}
-      <div className="mt-1.5 flex flex-wrap gap-1.5">
+      {group.notes ? (
+        <p className="mt-1 text-xs text-muted-subtle">{group.notes}</p>
+      ) : null}
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
         {visibleTraitOptions(
           group.options,
           group,
@@ -76,13 +108,11 @@ export function TraitOptionGroupSection({
             <ChipToggle
               key={opt.trait_option_id}
               label={opt.name}
+              description={opt.description}
               selected={selected}
               disabled={!selected && inGroup.length >= group.choice_count}
-              onInfo={
-                opt.description && onOptionInfo
-                  ? () => onOptionInfo(opt)
-                  : undefined
-              }
+              size="sm"
+              onInfo={onOptionInfo ? () => onOptionInfo(opt) : undefined}
               onToggle={() =>
                 onChange(
                   buildNextState(

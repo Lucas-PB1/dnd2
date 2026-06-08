@@ -8,9 +8,11 @@ import {
 import { BuilderDetailModal } from "@/features/character-builder/components/shared/BuilderDetailModal";
 import {
   OriginFeatDetailContent,
+  SpellDetailContent,
   TraitOptionDetailContent,
 } from "@/features/character-builder/components/shared/builder-detail-content";
 import type {
+  BuilderSpellOption,
   BuilderTraitOption,
   CharacterBuilderData,
   CharacterBuilderState,
@@ -20,7 +22,7 @@ import { ChoicesGearTab } from "./choices/ChoicesGearTab";
 import { ChoicesSkillsTab } from "./choices/ChoicesSkillsTab";
 import { ChoicesSpellsTab } from "./choices/ChoicesSpellsTab";
 import { ChoicesTraitsTab } from "./choices/ChoicesTraitsTab";
-import type { ChoiceTab, FeatModalState } from "./choices/types";
+import type { ChoiceTab, ChoiceModalState } from "./choices/types";
 import { useChoiceTabs } from "./choices/useChoiceTabs";
 
 type StepChoicesProps = {
@@ -35,7 +37,7 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
   const [spellbookFilter, setSpellbookFilter] = useState("");
   const [preparedFilter, setPreparedFilter] = useState("");
   const [featSpellFilter, setFeatSpellFilter] = useState("");
-  const [modalFeat, setModalFeat] = useState<FeatModalState>(null);
+  const [modal, setModal] = useState<ChoiceModalState>(null);
 
   const cls = data.classes.find((c) => c.id === state.class_id);
   const species = data.species.find((s) => s.id === state.species_id);
@@ -64,10 +66,18 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
   }
 
   const openTraitOptionInfo = (option: BuilderTraitOption) => {
-    setModalFeat({
+    setModal({
       title: option.name,
       content: "trait",
       traitOption: option,
+    });
+  };
+
+  const openSpellInfo = (spell: BuilderSpellOption) => {
+    setModal({
+      title: spell.name,
+      content: "spell",
+      spell,
     });
   };
 
@@ -111,6 +121,7 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
               onSpellbookFilterChange={setSpellbookFilter}
               onPreparedFilterChange={setPreparedFilter}
               onFeatSpellFilterChange={setFeatSpellFilter}
+              onSpellInfo={openSpellInfo}
             />
           ) : null}
 
@@ -136,7 +147,7 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
               humanFeat={humanFeat}
               onOptionInfo={openTraitOptionInfo}
               onOriginFeatInfo={(featId, title) =>
-                setModalFeat({ title, content: "origin", featId })
+                setModal({ title, content: "origin", featId })
               }
             />
           ) : null}
@@ -153,19 +164,22 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
       </BuilderStepFrame>
 
       <BuilderDetailModal
-        open={modalFeat !== null}
-        title={modalFeat?.title ?? ""}
-        onClose={() => setModalFeat(null)}
+        open={modal !== null}
+        title={modal?.title ?? ""}
+        onClose={() => setModal(null)}
       >
-        {modalFeat?.content === "trait" && modalFeat.traitOption ? (
-          <TraitOptionDetailContent option={modalFeat.traitOption} />
+        {modal?.content === "trait" && modal.traitOption ? (
+          <TraitOptionDetailContent option={modal.traitOption} />
         ) : null}
-        {modalFeat?.content === "origin" && modalFeat.featId ? (
+        {modal?.content === "spell" && modal.spell ? (
+          <SpellDetailContent spell={modal.spell} />
+        ) : null}
+        {modal?.content === "origin" && modal.featId ? (
           <OriginFeatDetailContent
             feat={
-              data.origin_feats.find((f) => f.id === modalFeat.featId) ?? {
-                id: modalFeat.featId,
-                name: modalFeat.title,
+              data.origin_feats.find((f) => f.id === modal.featId) ?? {
+                id: modal.featId,
+                name: modal.title,
                 description: null,
                 is_repeatable: false,
                 origin_feat_choices: [],

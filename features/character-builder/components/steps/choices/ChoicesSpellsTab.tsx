@@ -2,6 +2,7 @@ import type {
   BuilderBackgroundEntry,
   BuilderClassEntry,
   BuilderOriginFeat,
+  BuilderSpellOption,
 } from "@/features/character-builder/types/builder.types";
 import {
   classRequiresSpellSelection,
@@ -32,6 +33,7 @@ type ChoicesSpellsTabProps = ChoicesTabProps & {
   onSpellbookFilterChange: (value: string) => void;
   onPreparedFilterChange: (value: string) => void;
   onFeatSpellFilterChange: (value: string) => void;
+  onSpellInfo: (spell: BuilderSpellOption) => void;
 };
 
 export function ChoicesSpellsTab({
@@ -49,6 +51,7 @@ export function ChoicesSpellsTab({
   onSpellbookFilterChange,
   onPreparedFilterChange,
   onFeatSpellFilterChange,
+  onSpellInfo,
 }: ChoicesSpellsTabProps) {
   const hasClassSpells = classRequiresSpellSelection(cls.spellcasting);
   const hasBackgroundFeatSpells = featRequiresSpellSelection(
@@ -84,6 +87,7 @@ export function ChoicesSpellsTab({
           onToggle={(spellId) =>
             onChange(toggleCantripSpell(state, data, spellId))
           }
+          onSpellInfo={onSpellInfo}
         />
       ) : null}
 
@@ -103,6 +107,7 @@ export function ChoicesSpellsTab({
           onToggle={(spellId) =>
             onChange(toggleSpellbookSpell(state, data, spellId))
           }
+          onSpellInfo={onSpellInfo}
         />
       ) : null}
 
@@ -133,6 +138,7 @@ export function ChoicesSpellsTab({
           onToggle={(spellId) =>
             onChange(togglePreparedSpell(state, data, spellId))
           }
+          onSpellInfo={onSpellInfo}
         />
       ) : null}
 
@@ -159,6 +165,7 @@ export function ChoicesSpellsTab({
           onChange={onChange}
           filter={featSpellFilter}
           onFilterChange={onFeatSpellFilterChange}
+          onSpellInfo={onSpellInfo}
         />
       ) : null}
 
@@ -174,6 +181,7 @@ export function ChoicesSpellsTab({
           onChange={onChange}
           filter={featSpellFilter}
           onFilterChange={onFeatSpellFilterChange}
+          onSpellInfo={onSpellInfo}
         />
       ) : null}
     </div>

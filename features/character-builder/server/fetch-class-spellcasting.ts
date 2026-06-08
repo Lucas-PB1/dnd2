@@ -107,7 +107,7 @@ async function fetchSpellsForClassName(
   const { data: spellRows, error: spellError } = await admin
     .from("spell_list_spells")
     .select(
-      "spell_id, spells(id, name, level, school, requires_concentration, requires_ritual)",
+      "spell_id, spells(id, name, level, school, requires_concentration, requires_ritual, casting_time, range_text, components, material_component, duration_text, save_attribute, attack_type, description, character_effect_summary)",
     )
     .eq("spell_list_id", listRow.id);
 

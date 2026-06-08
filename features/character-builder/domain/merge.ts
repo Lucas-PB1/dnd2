@@ -13,7 +13,7 @@ function stubClass(
 ): BuilderClassEntry {
   return {
     ...entry,
-    skill_choices: [],
+    skill_choices: entry.skill_choices ?? [],
     tool_choices: [],
     spellcasting: entry.spellcasting ?? null,
     expertise_choices: entry.expertise_choices ?? [],
@@ -27,7 +27,7 @@ function stubSpecies(
 ): BuilderSpeciesEntry {
   return {
     ...entry,
-    traits: [],
+    traits: entry.traits ?? [],
   };
 }
 

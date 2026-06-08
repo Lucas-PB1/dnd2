@@ -4,7 +4,7 @@ import { useState } from "react";
 import {
   BuilderStepFrame,
   ChipToggle,
-  SelectionCard,
+  SelectionOptionCard,
 } from "@/features/character-builder/components/shared/BuilderParts";
 import { BuilderDetailModal } from "@/features/character-builder/components/shared/BuilderDetailModal";
 import { SpeciesDetailContent } from "@/features/character-builder/components/shared/builder-detail-content";
@@ -38,7 +38,7 @@ export function StepSpecies({ data, state, onChange }: StepSpeciesProps) {
       >
         <div className="grid gap-2 sm:grid-cols-2">
           {data.species.map((entry) => (
-            <SelectionCard
+            <SelectionOptionCard
               key={entry.id}
               compact
               title={entry.name}

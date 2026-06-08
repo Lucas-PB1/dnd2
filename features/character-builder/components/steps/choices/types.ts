@@ -1,4 +1,6 @@
 import type {
+  BuilderSpellOption,
+  BuilderTraitOption,
   CharacterBuilderData,
   CharacterBuilderState,
 } from "@/features/character-builder/types/builder.types";
@@ -17,9 +19,13 @@ export type ChoicesTabProps = {
   onChange: (next: CharacterBuilderState) => void;
 };
 
-export type FeatModalState = {
+export type ChoiceModalState = {
   title: string;
-  content: "origin" | "trait";
-  traitOption?: import("@/features/character-builder/types/builder.types").BuilderTraitOption;
+  content: "origin" | "trait" | "spell";
+  traitOption?: BuilderTraitOption;
+  spell?: BuilderSpellOption;
   featId?: number;
 } | null;
+
+/** @deprecated Use ChoiceModalState */
+export type FeatModalState = ChoiceModalState;

@@ -6,6 +6,125 @@ import type {
 } from "@/features/character-builder/types/builder.types";
 import type { BuilderAdminClient } from "./types";
 
+type SpeciesTraitLink = {
+  species_id: number;
+  trait_id: number;
+  traits:
+    | { id: number; name: string; description: string | null }
+    | { id: number; name: string; description: string | null }[]
+    | null;
+};
+
+function resolveTrait(link: SpeciesTraitLink) {
+  const trait = Array.isArray(link.traits) ? link.traits[0] : link.traits;
+  if (!trait) return null;
+  return {
+    trait_id: link.trait_id,
+    name: trait.name,
+    description: trait.description,
+  };
+}
+
+function buildSpeciesTraitsFromLinks(
+  links: SpeciesTraitLink[],
+  groups: {
+    trait_id: number;
+    option_group: string;
+    choice_count: number;
+    is_required: boolean;
+    notes: string | null;
+  }[],
+  options: {
+    id: number;
+    trait_id: number;
+    option_group: string;
+    name: string;
+    description: string | null;
+    sort_order: number;
+    skill_id: number | null;
+  }[],
+): BuilderSpeciesTrait[] {
+  return links.flatMap((link) => {
+    const trait = resolveTrait(link);
+    if (!trait) return [];
+
+    const choice_groups: BuilderTraitChoiceGroup[] = groups
+      .filter((group) => group.trait_id === link.trait_id)
+      .map((group) => ({
+        trait_id: link.trait_id,
+        trait_name: trait.name,
+        option_group: group.option_group,
+        choice_count: group.choice_count,
+        is_required: group.is_required,
+        notes: group.notes,
+        options: options
+          .filter(
+            (opt) =>
+              opt.trait_id === link.trait_id &&
+              opt.option_group === group.option_group,
+          )
+          .map(
+            (opt): BuilderTraitOption => ({
+              trait_option_id: opt.id,
+              name: opt.name,
+              description: opt.description,
+              option_group: opt.option_group,
+              skill_id: opt.skill_id,
+            }),
+          ),
+      }));
+
+    return [{ ...trait, choice_groups }];
+  });
+}
+
+export async function fetchAllSpeciesTraits(
+  admin: BuilderAdminClient,
+): Promise<Map<number, BuilderSpeciesTrait[]>> {
+  const { data: links, error } = await admin
+    .from("species_traits")
+    .select("species_id, trait_id, traits(id, name, description)");
+
+  if (error) throw new ApiError(error.message, 400);
+  if (!links?.length) return new Map();
+
+  const traitIds = [...new Set(links.map((link) => link.trait_id))];
+
+  const { data: groups, error: groupError } = await admin
+    .from("trait_option_groups")
+    .select("trait_id, option_group, choice_count, is_required, notes")
+    .in("trait_id", traitIds);
+
+  if (groupError) throw new ApiError(groupError.message, 400);
+
+  const { data: options, error: optionError } = await admin
+    .from("trait_options")
+    .select(
+      "id, trait_id, option_group, name, description, sort_order, skill_id",
+    )
+    .in("trait_id", traitIds)
+    .order("sort_order");
+
+  if (optionError) throw new ApiError(optionError.message, 400);
+
+  const traitsBySpecies = new Map<number, BuilderSpeciesTrait[]>();
+
+  for (const link of links) {
+    const [trait] = buildSpeciesTraitsFromLinks(
+      [link],
+      groups ?? [],
+      options ?? [],
+    );
+    if (!trait) continue;
+
+    const speciesTraits = traitsBySpecies.get(link.species_id) ?? [];
+    speciesTraits.push(trait);
+    traitsBySpecies.set(link.species_id, speciesTraits);
+  }
+
+  return traitsBySpecies;
+}
+
 export async function fetchSpeciesTraitsForSpecies(
   admin: BuilderAdminClient,
   speciesId: number,
@@ -37,43 +156,5 @@ export async function fetchSpeciesTraitsForSpecies(
 
   if (optionError) throw new ApiError(optionError.message, 400);
 
-  return links.flatMap((link) => {
-    const trait = Array.isArray(link.traits) ? link.traits[0] : link.traits;
-    if (!trait) return [];
-
-    const choice_groups: BuilderTraitChoiceGroup[] = (groups ?? [])
-      .filter((group) => group.trait_id === link.trait_id)
-      .map((group) => ({
-        trait_id: link.trait_id,
-        trait_name: trait.name,
-        option_group: group.option_group,
-        choice_count: group.choice_count,
-        is_required: group.is_required,
-        notes: group.notes,
-        options: (options ?? [])
-          .filter(
-            (opt) =>
-              opt.trait_id === link.trait_id &&
-              opt.option_group === group.option_group,
-          )
-          .map(
-            (opt): BuilderTraitOption => ({
-              trait_option_id: opt.id,
-              name: opt.name,
-              description: opt.description,
-              option_group: opt.option_group,
-              skill_id: opt.skill_id,
-            }),
-          ),
-      }));
-
-    return [
-      {
-        trait_id: link.trait_id,
-        name: trait.name,
-        description: trait.description,
-        choice_groups,
-      },
-    ];
-  });
+  return buildSpeciesTraitsFromLinks(links, groups ?? [], options ?? []);
 }

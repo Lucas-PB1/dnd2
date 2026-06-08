@@ -1,7 +1,8 @@
 import { Input } from "@/components/ui/Input";
-import { ChipToggle } from "@/features/character-builder/components/shared/BuilderParts";
+import { SelectionOptionCard } from "@/features/character-builder/components/shared/BuilderParts";
 import type { BuilderSpellOption } from "@/features/character-builder/types/builder.types";
-import { spellChipLabel } from "./spell-chip-label";
+import { spellSelectionFacts } from "./spell-chip-label";
+import { spellEffectText } from "@/features/character-builder/domain/spells/spell-display";
 
 type SpellPickerSectionProps = {
   title: string;
@@ -13,6 +14,7 @@ type SpellPickerSectionProps = {
   filter: string;
   onFilterChange: (value: string) => void;
   onToggle: (spellId: number) => void;
+  onSpellInfo?: (spell: BuilderSpellOption) => void;
 };
 
 export function SpellPickerSection({
@@ -25,11 +27,14 @@ export function SpellPickerSection({
   filter,
   onFilterChange,
   onToggle,
+  onSpellInfo,
 }: SpellPickerSectionProps) {
   const normalizedFilter = filter.trim().toLowerCase();
   const filteredSpells = normalizedFilter
-    ? spells.filter((spell) =>
-        spell.name.toLowerCase().includes(normalizedFilter),
+    ? spells.filter(
+        (spell) =>
+          spell.name.toLowerCase().includes(normalizedFilter) ||
+          (spellEffectText(spell) ?? "").toLowerCase().includes(normalizedFilter),
       )
     : spells;
 
@@ -39,7 +44,7 @@ export function SpellPickerSection({
       <p className="text-xs text-muted">
         {hint} — {selectedIds.length}/{max}
       </p>
-      {spells.length > 12 ? (
+      {spells.length > 8 ? (
         <Input
           value={filter}
           onChange={(event) => onFilterChange(event.target.value)}
@@ -48,19 +53,26 @@ export function SpellPickerSection({
           aria-label={`Filtrar ${title.toLowerCase()}`}
         />
       ) : null}
-      <div className="mt-2 flex flex-wrap gap-1.5">
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
         {filteredSpells.map((spell) => {
           const selected = selectedIds.includes(spell.spell_id);
           const disabled =
             disabledIds.includes(spell.spell_id) ||
             (!selected && selectedIds.length >= max);
+
           return (
-            <ChipToggle
+            <SelectionOptionCard
               key={spell.spell_id}
-              label={spellChipLabel(spell)}
+              compact
+              title={spell.name}
+              facts={spellSelectionFacts(spell)}
+              factsColumns={3}
               selected={selected}
               disabled={disabled}
-              onToggle={() => onToggle(spell.spell_id)}
+              onSelect={() => onToggle(spell.spell_id)}
+              onInfo={
+                onSpellInfo ? () => onSpellInfo(spell) : undefined
+              }
             />
           );
         })}

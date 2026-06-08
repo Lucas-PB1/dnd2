@@ -90,7 +90,8 @@ export function ChoicesTraitsTab({
         <TraitOptionGroupSection
           key={`${trait.trait_id}-${group.option_group}`}
           sectionKey={`${trait.trait_id}-${group.option_group}`}
-          title={`${trait.name} — ${group.option_group}`}
+          title={trait.name}
+          traitDescription={trait.description}
           group={group}
           selections={state.species_trait_options}
           data={data}

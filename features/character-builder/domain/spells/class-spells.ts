@@ -80,6 +80,15 @@ export function mapSpellRows(
           school: string | null;
           requires_concentration: boolean;
           requires_ritual: boolean;
+          casting_time?: string | null;
+          range_text?: string | null;
+          components?: string | null;
+          material_component?: string | null;
+          duration_text?: string | null;
+          save_attribute?: string | null;
+          attack_type?: string | null;
+          description?: string | null;
+          character_effect_summary?: string | null;
         }
       | {
           id: number;
@@ -88,29 +97,49 @@ export function mapSpellRows(
           school: string | null;
           requires_concentration: boolean;
           requires_ritual: boolean;
+          casting_time?: string | null;
+          range_text?: string | null;
+          components?: string | null;
+          material_component?: string | null;
+          duration_text?: string | null;
+          save_attribute?: string | null;
+          attack_type?: string | null;
+          description?: string | null;
+          character_effect_summary?: string | null;
         }[]
       | null;
   }[],
 ): BuilderSpellOption[] {
-  return rows
-    .map((row) => {
-      const spell = Array.isArray(row.spells) ? row.spells[0] : row.spells;
-      if (!spell) return null;
-      return {
-        spell_id: spell.id,
-        name: spell.name,
-        level: spell.level,
-        school: spell.school,
-        requires_concentration: spell.requires_concentration,
-        requires_ritual: spell.requires_ritual,
-      } satisfies BuilderSpellOption;
-    })
-    .filter((entry): entry is BuilderSpellOption => entry !== null)
-    .sort((a, b) =>
-      a.level !== b.level
-        ? a.level - b.level
-        : a.name.localeCompare(b.name, "pt-BR"),
-    );
+  const mapped: BuilderSpellOption[] = [];
+
+  for (const row of rows) {
+    const spell = Array.isArray(row.spells) ? row.spells[0] : row.spells;
+    if (!spell) continue;
+
+    mapped.push({
+      spell_id: spell.id,
+      name: spell.name,
+      level: spell.level,
+      school: spell.school,
+      requires_concentration: spell.requires_concentration,
+      requires_ritual: spell.requires_ritual,
+      casting_time: spell.casting_time ?? null,
+      range_text: spell.range_text ?? null,
+      components: spell.components ?? null,
+      material_component: spell.material_component ?? null,
+      duration_text: spell.duration_text ?? null,
+      save_attribute: spell.save_attribute ?? null,
+      attack_type: spell.attack_type ?? null,
+      character_effect_summary: spell.character_effect_summary?.trim() || null,
+      description: spell.description?.trim() || null,
+    });
+  }
+
+  return mapped.sort((a, b) =>
+    a.level !== b.level
+      ? a.level - b.level
+      : a.name.localeCompare(b.name, "pt-BR"),
+  );
 }
 
 export function classRequiresSpellSelection(

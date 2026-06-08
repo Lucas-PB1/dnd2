@@ -19,7 +19,7 @@ export async function fetchOriginFeatChoicesBatch(
 
   const { data: featTraits, error } = await admin
     .from("feat_traits")
-    .select("feat_id, trait_id, traits(id, name)")
+    .select("feat_id, trait_id, traits(id, name, description)")
     .in("feat_id", uniqueIds);
 
   if (error) throw new ApiError(error.message, 400);
@@ -63,6 +63,7 @@ export async function fetchOriginFeatChoicesBatch(
         return {
           trait_id: group.trait_id,
           trait_name: trait?.name ?? "Escolha",
+          trait_description: trait?.description ?? null,
           option_group: group.option_group,
           choice_count: group.choice_count,
           options: (options ?? [])
@@ -163,7 +164,7 @@ export async function fetchFeatSpellcasting(
     const { data: spellRows, error: spellError } = await admin
       .from("v_spell_list_details")
       .select(
-        "spell_list_name, spell_id, spell_name, level, school, requires_concentration, requires_ritual",
+        "spell_list_name, spell_id, spell_name, level, school, requires_concentration, requires_ritual, save_attribute, attack_type, character_effect_summary",
       )
       .in("spell_list_name", listNames);
 
@@ -178,6 +179,10 @@ export async function fetchFeatSpellcasting(
         school: row.school,
         requires_concentration: row.requires_concentration,
         requires_ritual: row.requires_ritual,
+        save_attribute: row.save_attribute,
+        attack_type: row.attack_type,
+        character_effect_summary: row.character_effect_summary?.trim() || null,
+        description: row.character_effect_summary?.trim() || null,
       });
       spells_by_list[row.spell_list_name] = list;
     }

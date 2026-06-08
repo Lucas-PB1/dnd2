@@ -4,7 +4,8 @@ import { useState } from "react";
 import {
   ABILITY_LABELS,
   BuilderStepFrame,
-  SelectionCard,
+  SelectionOptionCard,
+  type SelectionFact,
 } from "@/features/character-builder/components/shared/BuilderParts";
 import { BuilderDetailModal } from "@/features/character-builder/components/shared/BuilderDetailModal";
 import { ClassDetailContent } from "@/features/character-builder/components/shared/builder-detail-content";
@@ -26,6 +27,39 @@ type StepClassProps = {
   onChange: (patch: Partial<CharacterBuilderState> | CharacterBuilderState) => void;
 };
 
+function totalClassSkillChoices(cls: BuilderClassEntry): number {
+  return cls.skill_choices.reduce((sum, group) => sum + group.choice_count, 0);
+}
+
+function classSelectionFacts(cls: BuilderClassEntry): SelectionFact[] {
+  const expertiseAtCreation = totalExpertiseChoicesRequired(
+    cls.expertise_choices ?? [],
+  );
+  const spellCount = classRequiresSpellSelection(cls.spellcasting)
+    ? totalSpellChoicesRequired(cls.spellcasting)
+    : null;
+
+  return [
+    {
+      label: "Salv.",
+      value:
+        cls.saving_throws.map((s) => ABILITY_LABELS[s] ?? s).join(", ") || "—",
+    },
+    {
+      label: "Perícias",
+      value: String(totalClassSkillChoices(cls)),
+    },
+    {
+      label: "Magias",
+      value: spellCount !== null ? String(spellCount) : "—",
+    },
+    {
+      label: "Expertise",
+      value: expertiseAtCreation > 0 ? String(expertiseAtCreation) : "—",
+    },
+  ];
+}
+
 export function StepClass({ data, state, onChange }: StepClassProps) {
   const [modalClass, setModalClass] = useState<BuilderClassEntry | null>(null);
 
@@ -35,54 +69,23 @@ export function StepClass({ data, state, onChange }: StepClassProps) {
         title="Classe"
         hint="Nível 1 — perícias e proficiências fixas são aplicadas automaticamente."
       >
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {data.classes.map((cls) => {
-            const expertiseAtCreation = totalExpertiseChoicesRequired(
-              cls.expertise_choices ?? [],
-            );
-            const facts = [
-              {
-                label: "Salv.",
-                value:
-                  cls.saving_throws
-                    .map((s) => ABILITY_LABELS[s] ?? s)
-                    .join(", ") || "—",
-              },
-              {
-                label: "Perícias",
-                value: String(
-                  cls.skill_choices.reduce((s, g) => s + g.choice_count, 0),
-                ),
-              },
-            ];
-            if (expertiseAtCreation > 0) {
-              facts.push({
-                label: "Expertise",
-                value: String(expertiseAtCreation),
-              });
-            }
-            if (classRequiresSpellSelection(cls.spellcasting)) {
-              facts.push({
-                label: "Magias",
-                value: String(totalSpellChoicesRequired(cls.spellcasting)),
-              });
-            }
-
-            return (
-            <SelectionCard
+        <div className="grid auto-rows-fr gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {data.classes.map((cls) => (
+            <SelectionOptionCard
               key={cls.id}
               compact
+              fillHeight
+              factsColumns={2}
               title={cls.name}
               description={`Dado de vida ${cls.hit_die}`}
               selected={state.class_id === cls.id}
-              facts={facts}
+              facts={classSelectionFacts(cls)}
               onInfo={() => setModalClass(cls)}
               onSelect={() =>
                 onChange(resetDependentState({ ...state, class_id: cls.id }, 3))
               }
             />
-            );
-          })}
+          ))}
         </div>
       </BuilderStepFrame>
 

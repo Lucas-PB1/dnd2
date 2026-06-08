@@ -10,7 +10,7 @@ import type {
 import { fetchBackgroundById, fetchBackgroundsSummary } from "./fetch-backgrounds";
 import { fetchClassById, fetchClassesSummary } from "./fetch-classes";
 import { fetchOriginFeatsEnriched } from "./fetch-origin-feats";
-import { fetchSpeciesTraitsForSpecies } from "./fetch-species";
+import { fetchSpeciesTraitsForSpecies, fetchAllSpeciesTraits } from "./fetch-species";
 import { fetchToolsByCategory } from "./fetch-tools";
 import type { BuilderDetailsRequest } from "./types";
 
@@ -19,13 +19,15 @@ export type { BuilderDetailsRequest } from "./types";
 export async function fetchCharacterBuilderSummary(): Promise<CharacterBuilderSummary> {
   const admin = createAdminClient();
 
-  const [classes, speciesResult, backgrounds] = await Promise.all([
+  const [classes, speciesResult, backgrounds, speciesTraitsById] =
+    await Promise.all([
     fetchClassesSummary(admin),
     admin
       .from("species")
       .select("id, name, description, creature_type, size_options, base_speed")
       .order("name"),
     fetchBackgroundsSummary(admin),
+    fetchAllSpeciesTraits(admin),
   ]);
 
   if (speciesResult.error) {
@@ -33,7 +35,10 @@ export async function fetchCharacterBuilderSummary(): Promise<CharacterBuilderSu
   }
 
   const species: BuilderSpeciesSummaryEntry[] = (speciesResult.data ?? []).map(
-    (entry) => ({ ...entry }),
+    (entry) => ({
+      ...entry,
+      traits: speciesTraitsById.get(entry.id) ?? [],
+    }),
   );
 
   return {
@@ -45,6 +50,7 @@ export async function fetchCharacterBuilderSummary(): Promise<CharacterBuilderSu
         saving_throws,
         weapons,
         armor,
+        skill_choices,
         spellcasting,
         expertise_choices,
         features,
@@ -56,6 +62,7 @@ export async function fetchCharacterBuilderSummary(): Promise<CharacterBuilderSu
         saving_throws,
         weapons,
         armor,
+        skill_choices: skill_choices ?? [],
         spellcasting: spellcasting ?? null,
         expertise_choices: expertise_choices ?? [],
         features: features ?? [],

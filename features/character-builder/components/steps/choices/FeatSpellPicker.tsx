@@ -1,6 +1,7 @@
 import type {
   BuilderFeatSpellcasting,
   BuilderOriginFeatChoice,
+  BuilderSpellOption,
   CharacterBuilderState,
   FeatSpellSource,
   TraitOptionSelection,
@@ -26,6 +27,7 @@ type FeatSpellPickerProps = {
   onChange: (next: CharacterBuilderState) => void;
   filter: string;
   onFilterChange: (value: string) => void;
+  onSpellInfo?: (spell: BuilderSpellOption) => void;
 };
 
 export function FeatSpellPicker({
@@ -40,6 +42,7 @@ export function FeatSpellPicker({
   onChange,
   filter,
   onFilterChange,
+  onSpellInfo,
 }: FeatSpellPickerProps) {
   const listSelection = resolveFeatSpellListSelection(
     spellcasting,
@@ -117,6 +120,7 @@ export function FeatSpellPicker({
                 }),
               )
             }
+            onSpellInfo={onSpellInfo}
           />
         );
       })}

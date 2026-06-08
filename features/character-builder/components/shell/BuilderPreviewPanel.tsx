@@ -49,9 +49,6 @@ export function BuilderPreviewPanel({ data, state }: BuilderPreviewPanelProps) {
   const background = data?.backgrounds.find((b) => b.id === state.background_id);
   const cls = data?.classes.find((c) => c.id === state.class_id);
   const abilities = data ? computePreviewAbilities(data, state) : null;
-  const baseAbilities = ABILITY_KEYS.every(
-    (k) => state.ability_assignment[k] !== null,
-  );
 
   const maxSkills =
     cls?.skill_choices.reduce((sum, g) => sum + g.choice_count, 0) ?? 0;
@@ -144,38 +141,10 @@ export function BuilderPreviewPanel({ data, state }: BuilderPreviewPanelProps) {
           ) : null}
         </dl>
 
-        {baseAbilities ? (
-          <section>
-            <p className="mb-2 text-sm font-medium uppercase tracking-wide text-muted">
-              Atributos base
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              {ABILITY_KEYS.map((key) => {
-                const score = state.ability_assignment[key];
-                if (score === null) return null;
-                return (
-                  <div
-                    key={key}
-                    title={ABILITY_LABELS[key]}
-                    className="min-w-0 rounded-lg border border-border-muted bg-surface-elevated/80 px-2 py-2 text-center shadow-[inset_0_1px_0_rgb(255_255_255/0.04)]"
-                  >
-                    <p className="truncate text-xs font-medium uppercase text-muted-subtle">
-                      {key}
-                    </p>
-                    <p className="text-base font-semibold tabular-nums text-foreground">
-                      {score}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        ) : null}
-
         {abilities ? (
           <section>
             <p className="mb-2 text-sm font-medium uppercase tracking-wide text-muted">
-              Atributos finais
+              Atributos
             </p>
             <div className="grid grid-cols-3 gap-2">
               {ABILITY_KEYS.map((key) => (

@@ -1,33 +1,30 @@
 "use client";
 
+import type { ComponentProps } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 import { Check } from "lucide-react";
 import { fieldControlClass } from "@/components/ui/fieldStyles";
 import { BuilderInfoButton } from "@/features/character-builder/components/shared/BuilderInfoButton";
+import {
+  SelectionOptionCard,
+  type SelectionFact,
+} from "@/features/character-builder/components/shared/SelectionOptionCard";
 import { BUILDER_STEPS } from "@/features/character-builder/types/builder.types";
 
 const focusRingClass =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
 
-function CardSelectSurface({
-  onClick,
-  className = "",
-  children,
-}: {
-  onClick: () => void;
-  className?: string;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`block cursor-pointer ${focusRingClass} ${className}`}
-    >
-      {children}
-    </button>
-  );
-}
+export type { SelectionFact };
+export {
+  SelectionOptionCard,
+  SelectionOptionCardDescription,
+  SelectionOptionCardFact,
+  SelectionOptionCardFacts,
+  SelectionOptionCardHeader,
+  SelectionOptionCardMeta,
+  SelectionOptionCardShell,
+  SelectionOptionCardTitle,
+} from "@/features/character-builder/components/shared/SelectionOptionCard";
 
 type BuilderStepperProps = {
   currentStep: number;
@@ -87,133 +84,15 @@ export function BuilderStepper({ currentStep }: BuilderStepperProps) {
   );
 }
 
-export type SelectionFact = {
-  label: string;
-  value: string;
-};
-
-type SelectionCardProps = {
-  title: string;
-  description?: string | null;
-  selected?: boolean;
-  onSelect: () => void;
-  meta?: ReactNode;
-  compact?: boolean;
-  facts?: SelectionFact[];
-  onInfo?: () => void;
-};
-
-export function SelectionCard({
-  title,
-  description,
-  selected,
-  onSelect,
-  meta,
-  compact = false,
-  facts,
-  onInfo,
-}: SelectionCardProps) {
-  const shellClass = `w-full rounded-lg border text-left shadow-[inset_0_1px_0_rgb(255_255_255/0.035)] transition-[background-color,border-color,box-shadow] ${
-    compact ? "p-3" : "p-4"
-  } ${
-    selected
-      ? "border-brand/50 bg-brand-glow/45"
-      : "border-border bg-surface/40 hover:border-brand/35 hover:bg-surface/62 hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.045)]"
-  }`;
-
-  const body = (
-    <>
-      <div className="flex items-start justify-between gap-2">
-        <p
-          className={`font-medium text-foreground ${compact ? "text-base" : ""}`}
-        >
-          {title}
-        </p>
-        {selected ? (
-          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-brand text-on-brand">
-            <Check className="size-3.5" aria-hidden />
-          </span>
-        ) : null}
-      </div>
-      {description ? (
-        <p
-          className={`mt-0.5 text-muted ${compact ? "line-clamp-1 text-sm" : "line-clamp-2 text-sm"}`}
-        >
-          {description}
-        </p>
-      ) : null}
-    </>
-  );
-
-  if (onInfo) {
-    return (
-      <div className="relative">
-        <CardSelectSurface
-          onClick={onSelect}
-          className={`${shellClass} pr-12`}
-        >
-          <div className="min-w-0 text-left">
-            {body}
-          </div>
-
-          {facts && facts.length > 0 ? (
-            <div className="mt-2 flex flex-wrap gap-1">
-              {facts.map((fact) => (
-                <span
-                  key={`${fact.label}-${fact.value}`}
-                  className="rounded-md border border-border-muted bg-surface-elevated/80 px-2 py-0.5 text-xs text-muted-subtle"
-                >
-                  <span className="text-muted">{fact.label}:</span> {fact.value}
-                </span>
-              ))}
-            </div>
-          ) : null}
-
-          {meta ? (
-            <div
-              className={`text-muted-subtle ${compact ? "mt-1.5 text-[10px]" : "mt-3 text-xs"}`}
-            >
-              {meta}
-            </div>
-          ) : null}
-        </CardSelectSurface>
-        <div className="absolute right-3 top-3">
-          <BuilderInfoButton label={title} onClick={onInfo} />
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <CardSelectSurface onClick={onSelect} className={shellClass}>
-      {body}
-
-      {facts && facts.length > 0 ? (
-        <div className="mt-2 flex flex-wrap gap-1">
-          {facts.map((fact) => (
-            <span
-              key={`${fact.label}-${fact.value}`}
-              className="rounded-md border border-border-muted bg-surface-elevated/80 px-2 py-0.5 text-xs text-muted-subtle"
-            >
-              <span className="text-muted">{fact.label}:</span> {fact.value}
-            </span>
-          ))}
-        </div>
-      ) : null}
-
-      {meta ? (
-        <div
-          className={`text-muted-subtle ${compact ? "mt-1.5 text-[10px]" : "mt-3 text-xs"}`}
-        >
-          {meta}
-        </div>
-      ) : null}
-    </CardSelectSurface>
-  );
+export function SelectionCard(
+  props: ComponentProps<typeof SelectionOptionCard>,
+) {
+  return <SelectionOptionCard {...props} />;
 }
 
 type ChipToggleProps = {
   label: string;
+  description?: string | null;
   selected: boolean;
   disabled?: boolean;
   size?: "sm" | "md";
@@ -228,6 +107,7 @@ const chipSizeClasses = {
 
 export function ChipToggle({
   label,
+  description,
   selected,
   disabled,
   size = "md",
@@ -239,7 +119,8 @@ export function ChipToggle({
   const stateClass = selected
     ? "border-brand/45 bg-brand-glow/55 text-brand-soft shadow-[inset_0_1px_0_rgb(255_255_255/0.05)]"
     : "border-border bg-surface/30 text-muted hover:border-border-strong hover:bg-surface/60 hover:text-foreground";
-  const baseClass = `${sizeClass} ${widthClass} transition-[background-color,border-color,color,transform,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-40`;
+  const paddingClass = onInfo ? "pr-9" : "";
+  const baseClass = `${sizeClass} ${widthClass} ${paddingClass} relative min-w-0 text-left transition-[background-color,border-color,color,transform,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-40`;
 
   const handleChipKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (disabled) return;
@@ -249,32 +130,41 @@ export function ChipToggle({
     }
   };
 
-  const chip = (
-    <div
-      role="button"
-      tabIndex={disabled ? -1 : 0}
-      aria-pressed={selected}
-      aria-disabled={disabled || undefined}
-      onClick={() => {
-        if (!disabled) onToggle();
-      }}
-      onKeyDown={handleChipKeyDown}
-      className={`${baseClass} ${stateClass} ${disabled ? "" : "cursor-pointer"} ${focusRingClass}`}
-    >
-      {label}
+  return (
+    <div className={`inline-flex max-w-full ${widthClass}`}>
+      <div
+        role="button"
+        tabIndex={disabled ? -1 : 0}
+        aria-pressed={selected}
+        aria-disabled={disabled || undefined}
+        onClick={() => {
+          if (!disabled) onToggle();
+        }}
+        onKeyDown={handleChipKeyDown}
+        className={`${baseClass} ${stateClass} ${disabled ? "" : "cursor-pointer"} ${focusRingClass}`}
+      >
+        <span
+          className={`block font-medium ${selected ? "text-brand-soft" : "text-foreground"}`}
+        >
+          {label}
+        </span>
+        {description ? (
+          <span className="mt-0.5 block line-clamp-2 text-xs leading-snug text-muted">
+            {description}
+          </span>
+        ) : null}
+        {onInfo ? (
+          <div className="absolute right-1 top-1">
+            <BuilderInfoButton
+              label={label}
+              size="sm"
+              onClick={onInfo}
+            />
+          </div>
+        ) : null}
+      </div>
     </div>
   );
-
-  if (onInfo) {
-    return (
-      <span className="inline-flex items-center gap-0.5">
-        {chip}
-        <BuilderInfoButton label={label} onClick={onInfo} />
-      </span>
-    );
-  }
-
-  return chip;
 }
 
 type BuilderSectionTabsProps = {
