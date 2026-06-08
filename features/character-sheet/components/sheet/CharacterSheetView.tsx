@@ -5,6 +5,11 @@ import { ArrowLeft } from "lucide-react";
 import { FadeIn } from "@/components/motion";
 import { Badge } from "@/components/ui/Badge";
 import { Surface } from "@/components/ui/Surface";
+import { CharacterSpellSlotsSection } from "@/features/character-sheet/components/sheet/CharacterSpellSlotsSection";
+import { CharacterLevelUpSection } from "@/features/character-sheet/components/sheet/CharacterLevelUpSection";
+import { CharacterResourcesSection } from "@/features/character-sheet/components/sheet/CharacterResourcesSection";
+import { CharacterTraitsSection } from "@/features/character-sheet/components/sheet/CharacterTraitsSection";
+import { formatProficiencyBonus } from "@/features/character-sheet/domain/sheet-display";
 import type { CharacterDetail } from "@/features/character-sheet/types/character.types";
 
 type CharacterSheetViewProps = {
@@ -43,6 +48,9 @@ export function CharacterSheetView({ character }: CharacterSheetViewProps) {
           <Badge tone="accent">
             Nível {character.level}
           </Badge>
+          <Badge tone="neutral">
+            Prof {formatProficiencyBonus(character.proficiency_bonus)}
+          </Badge>
         </div>
       </FadeIn>
 
@@ -61,9 +69,44 @@ export function CharacterSheetView({ character }: CharacterSheetViewProps) {
             <dt className="text-xs uppercase tracking-wide text-muted-subtle">Classes</dt>
             <dd className="mt-1 text-foreground">{formatClasses(character)}</dd>
           </div>
+          {character.starting_gold_gp > 0 ? (
+            <div>
+              <dt className="text-xs uppercase tracking-wide text-muted-subtle">Ouro inicial</dt>
+              <dd className="mt-1 font-medium text-foreground">
+                {character.starting_gold_gp.toLocaleString("pt-BR")} PO
+              </dd>
+            </div>
+          ) : null}
         </dl>
         </Surface>
       </FadeIn>
+
+      {character.spellcasting && character.spell_slots.length > 0 ? (
+        <FadeIn delay={0.15} className="mt-6">
+          <CharacterSpellSlotsSection
+            spellcasting={character.spellcasting}
+            slots={character.spell_slots}
+          />
+        </FadeIn>
+      ) : null}
+
+      {character.resources.length > 0 ? (
+        <FadeIn delay={0.16} className="mt-6">
+          <CharacterResourcesSection resources={character.resources} />
+        </FadeIn>
+      ) : null}
+
+      {character.is_owner ? (
+        <FadeIn delay={0.165} className="mt-6">
+          <CharacterLevelUpSection character={character} />
+        </FadeIn>
+      ) : null}
+
+      {character.traits.length > 0 ? (
+        <FadeIn delay={0.17} className="mt-6">
+          <CharacterTraitsSection traits={character.traits} />
+        </FadeIn>
+      ) : null}
 
       <FadeIn delay={0.18} className="mt-6">
         <Surface tone="dashed" className="p-6">

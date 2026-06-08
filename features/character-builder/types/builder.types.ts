@@ -7,6 +7,16 @@ export type AbilityMethod = "standard" | "point_buy" | "roll";
 
 export type BackgroundAsiMode = "split" | "even";
 
+export type EquipmentMode = "background" | "starting_gold" | "campaign_shop";
+
+export type ShopPurchase = {
+  item_id: number;
+  item_name: string;
+  quantity: number;
+  unit_price_gp: number;
+  is_magical: boolean;
+};
+
 export type BuilderSkillOption = {
   skill_id: number;
   name: string;
@@ -146,6 +156,7 @@ export type BuilderSubclassSummary = {
   id: number;
   name: string;
   description: string | null;
+  unlock_level: number;
   features: BuilderClassFeature[];
 };
 
@@ -359,6 +370,12 @@ export type CharacterBuilderState = {
   /** Nível da classe principal (1–20). */
   class_level: number;
   subclass_id: number | null;
+  /** Multiclasse opcional (segunda entrada em classes[]). */
+  secondary_class: {
+    class_id: number;
+    class_level: number;
+    subclass_id: number | null;
+  } | null;
   class_skill_ids: number[];
   class_tool_selections: ToolProficiencySelection[];
   background_tool_selections: ToolProficiencySelection[];
@@ -366,7 +383,11 @@ export type CharacterBuilderState = {
   origin_feat_trait_options: TraitOptionSelection[];
   human_origin_feat_id: number | null;
   human_origin_feat_trait_options: TraitOptionSelection[];
+  /** Nível 1: sempre background. Nível 2+: pacote, ouro PHB ou loja de campanha. */
+  equipment_mode: EquipmentMode;
   equipment_option_key: string | null;
+  /** Compras na loja (modo campaign_shop). */
+  shop_purchases: ShopPurchase[];
   cantrip_spell_ids: number[];
   feat_spell_selections: FeatSpellSelection[];
   spellbook_spell_ids: number[];
@@ -388,11 +409,17 @@ export type CreateCharacterBuilderPayload = {
   class_id: number;
   class_level: number;
   subclass_id: number | null;
+  classes: {
+    class_id: number;
+    class_level: number;
+    subclass_id: number | null;
+  }[];
   species_id: number;
   background_id: number;
   size?: string;
   abilities: Record<AbilityKey, number>;
   max_hp?: number;
+  starting_gold_gp?: number;
   class_skill_ids: number[];
   proficiencies: ToolProficiencySelection[];
   trait_options: TraitOptionSelection[];

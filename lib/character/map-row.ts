@@ -16,6 +16,8 @@ export type CharacterListRow = {
   id: number;
   name: string;
   level: number;
+  proficiency_bonus: number;
+  starting_gold_gp: number;
   updated_at: string;
   species: SpeciesRef;
   backgrounds: BackgroundRef;
@@ -44,6 +46,8 @@ export function mapCharacterRow(row: CharacterListRow): CharacterSummary {
     id: row.id,
     name: row.name,
     level: row.level,
+    proficiency_bonus: row.proficiency_bonus ?? 2,
+    starting_gold_gp: row.starting_gold_gp ?? 0,
     species_name: unwrapName(row.species),
     background_name: unwrapName(row.backgrounds),
     classes: mapClasses(row.character_classes),
@@ -55,6 +59,8 @@ export const CHARACTER_LIST_SELECT = `
   id,
   name,
   level,
+  proficiency_bonus,
+  starting_gold_gp,
   updated_at,
   species ( name ),
   backgrounds ( name ),

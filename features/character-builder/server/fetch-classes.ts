@@ -49,6 +49,7 @@ type SubclassRow = {
   id: number;
   name: string;
   description: string | null;
+  unlock_level: number | null;
 };
 
 function one<T>(value: T | T[] | null): T | null {
@@ -255,7 +256,7 @@ async function fetchClassSubclasses(
 ): Promise<BuilderSubclassSummary[]> {
   const { data, error } = await admin
     .from("subclasses")
-    .select("class_id, id, name, description")
+    .select("class_id, id, name, description, unlock_level")
     .eq("class_id", classId)
     .order("name");
 
@@ -267,10 +268,11 @@ async function fetchClassSubclasses(
     rows.map((row) => row.id),
   );
 
-  return rows.map(({ id, name, description }) => ({
+  return rows.map(({ id, name, description, unlock_level }) => ({
     id,
     name,
     description,
+    unlock_level: unlock_level ?? 3,
     features: featuresBySubclass.get(id) ?? [],
   }));
 }
@@ -279,7 +281,7 @@ async function fetchAllClassSubclasses(
   admin: BuilderAdminClient,
 ): Promise<Map<number, BuilderSubclassSummary[]>> {
   const [{ data, error }, featuresBySubclass] = await Promise.all([
-    admin.from("subclasses").select("class_id, id, name, description").order("name"),
+    admin.from("subclasses").select("class_id, id, name, description, unlock_level").order("name"),
     fetchAllSubclassFeatures(admin),
   ]);
 
@@ -293,6 +295,7 @@ async function fetchAllClassSubclasses(
       id: row.id,
       name: row.name,
       description: row.description,
+      unlock_level: row.unlock_level ?? 3,
       features: featuresBySubclass.get(row.id) ?? [],
     });
     subclassesByClass.set(row.class_id, list);

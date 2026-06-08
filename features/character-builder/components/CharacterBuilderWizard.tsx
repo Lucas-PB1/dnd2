@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
 import { BuilderShell } from "@/features/character-builder/components/shell/BuilderShell";
+import { BuilderImportExport } from "@/features/character-builder/components/shell/BuilderImportExport";
 import { StepAbilities } from "@/features/character-builder/components/steps/StepAbilities";
 import { StepSpecies } from "@/features/character-builder/components/steps/StepSpecies";
 import { StepBackground } from "@/features/character-builder/components/steps/StepBackground";
@@ -94,6 +95,8 @@ export function CharacterBuilderWizard() {
       setDetailsKey(null);
       setState((prev) => ({
         ...prev,
+        equipment_mode:
+          prev.class_level <= 1 ? "background" : prev.equipment_mode,
         equipment_option_key: null,
         cantrip_spell_ids: [],
         spellbook_spell_ids: [],
@@ -343,6 +346,13 @@ export function CharacterBuilderWizard() {
 
   const footer = (
     <>
+      <BuilderImportExport
+        state={state}
+        onImport={(imported) => {
+          setState(imported);
+          setStepError(null);
+        }}
+      />
       <Button
         type="button"
         variant="ghost"

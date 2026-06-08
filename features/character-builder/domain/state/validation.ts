@@ -5,10 +5,13 @@ import {
   progressionFeatLevelsForClass,
   validateProgressionFeatSelections,
 } from "@/features/character-builder/domain/progression/feats";
-import { requiresSubclass } from "@/features/character-builder/domain/progression/levels";
+import { requiresSubclassSelection } from "@/features/character-builder/domain/progression/levels";
 import { applyBackgroundAsi } from "@/features/character-builder/domain/abilities/abilities";
 import { validateSpellSelections } from "@/features/character-builder/domain/spells/class-spells";
 import { validateFeatSpellSelections } from "@/features/character-builder/domain/spells/feat-spells";
+import { validateMulticlassSplit } from "@/features/character-builder/domain/multiclass/multiclass";
+import { validateShopPurchases } from "@/features/character-builder/domain/equipment/equipment-shop";
+import { effectiveEquipmentMode } from "@/features/character-builder/domain/equipment/equipment-mode";
 import { mergeOriginFeatTraitOptions } from "@/features/character-builder/domain/origin-feat";
 import type {
   CharacterBuilderData,
@@ -89,13 +92,13 @@ export function validateBuilderStep(
       }
       if (!state.class_id) return "Escolha uma classe.";
       const cls = selectedClass(data, state);
-      if (requiresSubclass(state.class_level)) {
+      if (cls && requiresSubclassSelection(state.class_level, cls.subclasses)) {
         if (!state.subclass_id) return "Escolha uma subclasse.";
         if (cls && !cls.subclasses.some((sub) => sub.id === state.subclass_id)) {
           return "Subclasse inválida para esta classe.";
         }
       }
-      return null;
+      return validateMulticlassSplit(state, data.classes);
     }
     case 4: {
       if (!data) return "Carregando catálogo…";
@@ -161,8 +164,18 @@ export function validateBuilderStep(
         }
       }
 
-      if (!state.equipment_option_key) {
-        return "Escolha o equipamento inicial do antecedente.";
+      if (effectiveEquipmentMode(state.class_level, state.equipment_mode) === "background") {
+        if (!state.equipment_option_key) {
+          return "Escolha o equipamento inicial do antecedente.";
+        }
+      }
+
+      if (effectiveEquipmentMode(state.class_level, state.equipment_mode) === "campaign_shop") {
+        if (state.shop_purchases.length === 0) {
+          return "Selecione itens na loja de campanha.";
+        }
+        const shopError = validateShopPurchases(state);
+        if (shopError) return shopError;
       }
 
       const spellError = validateSpellSelections(cls.spellcasting, state);

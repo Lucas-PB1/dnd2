@@ -4,8 +4,7 @@ import {
   abilityModifier,
   isBaseAbilitiesComplete,
 } from "@/features/character-builder/domain/abilities/abilities";
-import { computeMaxHp } from "@/features/character-builder/domain/progression/hp";
-import { requiresSubclass } from "@/features/character-builder/domain/progression/levels";
+import { requiresSubclassSelection } from "@/features/character-builder/domain/progression/levels";
 import {
   buildProgressionFeatsPayload,
   validateProgressionFeatSelections,
@@ -34,6 +33,17 @@ import {
   validateFeatSpellSelections,
 } from "@/features/character-builder/domain/spells/feat-spells";
 import { mergeOriginFeatTraitOptions } from "@/features/character-builder/domain/origin-feat";
+import {
+  buildEquipmentInventory,
+  effectiveEquipmentMode,
+  resolveStartingGoldGp,
+} from "@/features/character-builder/domain/equipment/equipment-mode";
+import { validateShopPurchases } from "@/features/character-builder/domain/equipment/equipment-shop";
+import {
+  buildClassesRpcPayload,
+  computeMulticlassMaxHp,
+  validateMulticlassSplit,
+} from "@/features/character-builder/domain/multiclass/multiclass";
 
 export function buildRpcPayloadFromBuilderState(
   data: CharacterBuilderData,
@@ -49,7 +59,7 @@ export function buildRpcPayloadFromBuilderState(
     throw new ApiError("Seleções incompletas.", 400);
   }
 
-  if (requiresSubclass(state.class_level)) {
+  if (requiresSubclassSelection(state.class_level, cls.subclasses)) {
     if (!state.subclass_id) {
       throw new ApiError("Escolha uma subclasse.", 400);
     }
@@ -58,6 +68,23 @@ export function buildRpcPayloadFromBuilderState(
     }
   } else if (state.subclass_id !== null) {
     throw new ApiError("Subclasse só é permitida a partir do nível 3.", 400);
+  }
+
+  const multiclassError = validateMulticlassSplit(state, data.classes);
+  if (multiclassError) {
+    throw new ApiError(multiclassError, 400);
+  }
+
+  const shopError = validateShopPurchases(state);
+  if (shopError) {
+    throw new ApiError(shopError, 400);
+  }
+
+  if (
+    effectiveEquipmentMode(state.class_level, state.equipment_mode) === "campaign_shop" &&
+    state.shop_purchases.length === 0
+  ) {
+    throw new ApiError("Selecione itens na loja de campanha ou mude o modo de equipamento.", 400);
   }
 
   const name = state.name.trim();
@@ -118,8 +145,10 @@ export function buildRpcPayloadFromBuilderState(
     throw new ApiError("Humanos devem escolher um feat de origem (Versátil).", 400);
   }
 
-  if (!state.equipment_option_key) {
-    throw new ApiError("Escolha o equipamento inicial do antecedente.", 400);
+  if (effectiveEquipmentMode(state.class_level, state.equipment_mode) === "background") {
+    if (!state.equipment_option_key) {
+      throw new ApiError("Escolha o equipamento inicial do antecedente.", 400);
+    }
   }
 
   const sizes = species.size_options.split(/\s+or\s+/i).map((s) => s.trim());
@@ -191,16 +220,8 @@ export function buildRpcPayloadFromBuilderState(
   }
   feats.push(...buildProgressionFeatsPayload(data, state));
 
-  const equipment = background.equipment_options.find(
-    (opt) => opt.option_key === state.equipment_option_key,
-  );
-  const inventory = (equipment?.items ?? [])
-    .filter((item) => item.item_id !== null)
-    .map((item) => ({
-      item_id: item.item_id as number,
-      quantity: item.quantity,
-      is_equipped: false,
-    }));
+  const inventory = buildEquipmentInventory(background, state);
+  const starting_gold_gp = resolveStartingGoldGp(state);
 
   for (const group of cls.tool_choices) {
     const selected = state.class_tool_selections.filter(
@@ -283,18 +304,20 @@ export function buildRpcPayloadFromBuilderState(
   const trait_spell_choices = buildFeatSpellsRpcPayload(data, state);
 
   const constitution = abilities.CON;
-  const max_hp = computeMaxHp(cls.hit_die, abilityModifier(constitution), state.class_level);
+  const max_hp = computeMulticlassMaxHp(state, data.classes, abilityModifier(constitution));
 
   return {
     name,
     class_id: cls.id,
     class_level: state.class_level,
     subclass_id: state.subclass_id,
+    classes: buildClassesRpcPayload(state),
     species_id: species.id,
     background_id: background.id,
     size,
     abilities,
     max_hp,
+    starting_gold_gp,
     class_skill_ids: state.class_skill_ids,
     proficiencies,
     trait_options,
@@ -320,6 +343,7 @@ export function toCreateCharacterRpcBody(
     size: payload.size,
     max_hp: payload.max_hp,
     current_hp: payload.max_hp,
+    starting_gold_gp: payload.starting_gold_gp ?? 0,
     abilities: {
       STR: abilities.STR,
       DEX: abilities.DEX,
@@ -328,11 +352,7 @@ export function toCreateCharacterRpcBody(
       WIS: abilities.WIS,
       CHA: abilities.CHA,
     },
-    classes: [{
-      class_id: payload.class_id,
-      class_level: payload.class_level,
-      subclass_id: payload.subclass_id,
-    }],
+    classes: payload.classes,
     skills: payload._skillsPayload ?? payload.class_skill_ids.map((skill_id) => ({
       skill_id,
       is_proficient: true,

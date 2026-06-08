@@ -3,18 +3,54 @@ export type CharacterClassSummary = {
   level: number;
 };
 
+export type CharacterSpellSlot = {
+  slot_level: number;
+  max_slots: number;
+  used_slots: number;
+};
+
+export type CharacterSpellcastingInfo = {
+  class_name: string;
+  progression_type: "full" | "half" | "pact" | "third";
+  slot_recovery: string;
+  spellcasting_ability: string | null;
+};
+
 export type CharacterSummary = {
   id: number;
   name: string;
   level: number;
+  proficiency_bonus: number;
   species_name: string | null;
   background_name: string | null;
+  starting_gold_gp: number;
   classes: CharacterClassSummary[];
   updated_at: string;
 };
 
+export type CharacterTraitSummary = {
+  trait_id: number;
+  trait_name: string;
+  source_type: string;
+  source_name: string;
+  level_required: number | null;
+};
+
+export type CharacterResourceSummary = {
+  trait_id: number | null;
+  resource_key: string | null;
+  name: string;
+  max_uses: number;
+  used_uses: number;
+  reset_on: string | null;
+};
+
 export type CharacterDetail = CharacterSummary & {
   is_owner: boolean;
+  spell_slots: CharacterSpellSlot[];
+  spellcasting: CharacterSpellcastingInfo | null;
+  traits: CharacterTraitSummary[];
+  resources: CharacterResourceSummary[];
 };
 
 export type CreateCharacterPayload = {

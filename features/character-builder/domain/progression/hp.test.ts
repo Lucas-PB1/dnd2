@@ -16,4 +16,8 @@ describe("computeMaxHp", () => {
   it("calcula PV no nível 20 (máximo por nível)", () => {
     expect(computeMaxHp(hitDie, conMod, 20)).toBe(200);
   });
+
+  it("calcula PV no nível 5 (média por nível)", () => {
+    expect(computeMaxHp(hitDie, conMod, 5, "average")).toBe(38);
+  });
 });

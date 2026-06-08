@@ -18,8 +18,13 @@ import {
   MAX_CLASS_LEVEL,
   MIN_CLASS_LEVEL,
   featChoicesRequired,
-  requiresSubclass,
+  requiresSubclassSelection,
 } from "@/features/character-builder/domain/progression/levels";
+import {
+  maxSecondaryClassLevel,
+  totalCharacterLevel,
+  validateMulticlassSplit,
+} from "@/features/character-builder/domain/multiclass/multiclass";
 import {
   type BuilderClassEntry,
   type CharacterBuilderData,
@@ -91,21 +96,25 @@ export function StepClass({
     BuilderClassEntry["subclasses"][number] | null
   >(null);
   const selectedClass = data.classes.find((cls) => cls.id === state.class_id);
+  const secondaryClass = state.secondary_class
+    ? data.classes.find((cls) => cls.id === state.secondary_class?.class_id)
+    : null;
+  const totalLevel = totalCharacterLevel(state);
   const levelLabel =
-    state.class_level === 1 ? "nível 1" : `nível ${state.class_level}`;
+    totalLevel === 1 ? "nível 1" : `nível ${totalLevel}`;
   const showSubclassPicker =
     selectedClass !== undefined &&
-    requiresSubclass(state.class_level) &&
+    requiresSubclassSelection(state.class_level, selectedClass.subclasses) &&
     selectedClass.subclasses.length > 0;
 
   return (
     <>
       <BuilderStepFrame
         title="Classe"
-        hint={`Escolha a classe e o ${levelLabel}. Perícias e proficiências fixas são aplicadas automaticamente.`}
+        hint={`Escolha a classe principal e o ${levelLabel}. Multiclasse opcional abaixo.`}
       >
         <div className="mb-4 max-w-xs">
-          <Label htmlFor="builder-class-level">Nível inicial</Label>
+          <Label htmlFor="builder-class-level">Nível da classe principal</Label>
           <Select
             id="builder-class-level"
             className="mt-1.5 w-full"
@@ -117,7 +126,10 @@ export function StepClass({
                   {
                     ...state,
                     class_level: nextLevel,
-                    subclass_id: requiresSubclass(nextLevel)
+                    subclass_id: requiresSubclassSelection(
+                      nextLevel,
+                      selectedClass?.subclasses ?? [],
+                    )
                       ? state.subclass_id
                       : null,
                   },
@@ -193,6 +205,129 @@ export function StepClass({
             </div>
           </section>
         ) : null}
+
+        <section className="mt-6 border-t border-border pt-4">
+          <p className="text-sm font-medium text-foreground">Multiclasse (opcional)</p>
+          <p className="mt-1 text-xs text-muted">
+            Nível total: {totalLevel}/{MAX_CLASS_LEVEL}
+            {validateMulticlassSplit(state, data.classes)
+              ? ` · ${validateMulticlassSplit(state, data.classes)}`
+              : ""}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="rounded-md border border-border px-3 py-1.5 text-sm text-muted hover:text-foreground"
+              onClick={() =>
+                onChange({
+                  ...state,
+                  secondary_class: state.secondary_class
+                    ? null
+                    : {
+                        class_id: data.classes.find((cls) => cls.id !== state.class_id)?.id ?? 0,
+                        class_level: 1,
+                        subclass_id: null,
+                      },
+                })
+              }
+            >
+              {state.secondary_class ? "Remover segunda classe" : "Adicionar segunda classe"}
+            </button>
+          </div>
+
+          {state.secondary_class ? (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="builder-secondary-class">Segunda classe</Label>
+                <Select
+                  id="builder-secondary-class"
+                  className="mt-1.5 w-full"
+                  value={String(state.secondary_class.class_id)}
+                  onChange={(event) =>
+                    onChange({
+                      ...state,
+                      secondary_class: {
+                        ...state.secondary_class!,
+                        class_id: Number(event.target.value),
+                        subclass_id: null,
+                      },
+                    })
+                  }
+                >
+                  {data.classes
+                    .filter((cls) => cls.id !== state.class_id)
+                    .map((cls) => (
+                      <option key={cls.id} value={cls.id}>
+                        {cls.name}
+                      </option>
+                    ))}
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="builder-secondary-level">Nível da segunda classe</Label>
+                <Select
+                  id="builder-secondary-level"
+                  className="mt-1.5 w-full"
+                  value={String(state.secondary_class.class_level)}
+                  onChange={(event) =>
+                    onChange({
+                      ...state,
+                      secondary_class: {
+                        ...state.secondary_class!,
+                        class_level: Number(event.target.value),
+                        subclass_id:
+                          requiresSubclassSelection(
+                            Number(event.target.value),
+                            secondaryClass?.subclasses ?? [],
+                          )
+                            ? state.secondary_class!.subclass_id
+                            : null,
+                      },
+                    })
+                  }
+                >
+                  {Array.from(
+                    { length: maxSecondaryClassLevel(state) },
+                    (_, index) => index + 1,
+                  ).map((level) => (
+                    <option key={level} value={level}>
+                      Nível {level}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            </div>
+          ) : null}
+
+          {state.secondary_class &&
+          secondaryClass &&
+          requiresSubclassSelection(
+            state.secondary_class.class_level,
+            secondaryClass.subclasses,
+          ) ? (
+            <div className="mt-3 grid auto-rows-fr gap-2 sm:grid-cols-2">
+              {secondaryClass.subclasses.map((subclass) => (
+                <SelectionOptionCard
+                  key={subclass.id}
+                  compact
+                  fillHeight
+                  title={subclass.name}
+                  description={subclass.description ?? undefined}
+                  selected={state.secondary_class?.subclass_id === subclass.id}
+                  onSelect={() =>
+                    onChange({
+                      ...state,
+                      secondary_class: {
+                        ...state.secondary_class!,
+                        subclass_id: subclass.id,
+                      },
+                    })
+                  }
+                />
+              ))}
+            </div>
+          ) : null}
+        </section>
       </BuilderStepFrame>
 
       <BuilderDetailModal
@@ -200,7 +335,9 @@ export function StepClass({
         title={modalClass?.name ?? ""}
         onClose={() => setModalClass(null)}
       >
-        {modalClass ? <ClassDetailContent cls={modalClass} /> : null}
+        {modalClass ? (
+          <ClassDetailContent cls={modalClass} classLevel={state.class_level} />
+        ) : null}
       </BuilderDetailModal>
 
       <BuilderDetailModal

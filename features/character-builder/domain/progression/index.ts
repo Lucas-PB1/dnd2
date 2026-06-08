@@ -6,6 +6,8 @@ export {
   MIN_CLASS_LEVEL,
   proficiencyBonusForLevel,
   requiresSubclass,
+  requiresSubclassSelection,
+  subclassUnlockLevel,
   SUBCLASS_UNLOCK_LEVEL,
 } from "./levels";
 export { computeLevel1Hp, computeMaxHp, type HpMode } from "./hp";

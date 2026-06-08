@@ -25,6 +25,14 @@ import {
   formatSpellSlotsPreview,
   spellSlotsForClass,
 } from "@/features/character-builder/domain/progression/spell-slots";
+import {
+  formatEquipmentModeSummary,
+  resolveStartingGoldGp,
+} from "@/features/character-builder/domain/equipment/equipment-mode";
+import {
+  formatStartingGoldPreview,
+  startingGoldHasBonus,
+} from "@/features/character-builder/domain/equipment/starting-gold";
 
 type BuilderPreviewPanelProps = {
   data: CharacterBuilderData | null;
@@ -91,6 +99,13 @@ export function BuilderPreviewPanel({ data, state }: BuilderPreviewPanelProps) {
     cls && spellcasting
       ? formatSpellSlotsPreview(spellSlotsForClass(cls.name, state.class_level))
       : null;
+  const equipmentPreview = formatEquipmentModeSummary(state);
+  const startingGoldPreview =
+    state.equipment_mode === "starting_gold" && state.class_level > 1
+      ? `${resolveStartingGoldGp(state).toLocaleString("pt-BR")} PO`
+      : state.class_level > 1 && startingGoldHasBonus(state.class_level)
+        ? formatStartingGoldPreview(state.class_level)
+        : null;
 
   return (
     <aside
@@ -130,6 +145,12 @@ export function BuilderPreviewPanel({ data, state }: BuilderPreviewPanelProps) {
               ) : null}
               {spellSlotPreview ? (
                 <PreviewRow label="Slots" value={spellSlotPreview} />
+              ) : null}
+              {equipmentPreview ? (
+                <PreviewRow label="Equipamento" value={equipmentPreview} />
+              ) : null}
+              {startingGoldPreview ? (
+                <PreviewRow label="Ouro" value={startingGoldPreview} />
               ) : null}
             </>
           ) : null}

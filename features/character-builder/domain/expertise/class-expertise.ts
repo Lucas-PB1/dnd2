@@ -2,9 +2,19 @@ import type {
   BuilderClassEntry,
   BuilderExpertiseGroup,
   BuilderSkillOption,
+  BuilderTraitOption,
   CharacterBuilderData,
   CharacterBuilderState,
 } from "@/features/character-builder/types/builder.types";
+import {
+  progressionTraitOptionsForSlot,
+  syncProgressionFeatSlots,
+} from "@/features/character-builder/domain/progression/feats";
+import {
+  grantsExpertiseIfAlreadyProficient,
+  isSkillProficiencyOptionGroup,
+  proficientSkillIds,
+} from "@/features/character-builder/domain/selection/trait-options";
 
 const EXPERTISE_TRAIT_PATTERN = /expertise/i;
 const NON_SKILL_EXPERTISE_PATTERN = /infiltration expertise/i;
@@ -189,18 +199,142 @@ export function validateExpertiseSelections(
   return null;
 }
 
+function coreProficientSkillIds(
+  data: CharacterBuilderData,
+  state: CharacterBuilderState,
+): Set<number> {
+  const background = data.backgrounds.find(
+    (entry) => entry.id === state.background_id,
+  );
+  const species = data.species.find((entry) => entry.id === state.species_id);
+  const humanFeat = data.origin_feats.find(
+    (entry) => entry.id === state.human_origin_feat_id,
+  );
+
+  const ids = new Set<number>();
+
+  for (const skill of background?.skill_proficiencies ?? []) {
+    ids.add(skill.skill_id);
+  }
+  for (const skillId of state.class_skill_ids) {
+    ids.add(skillId);
+  }
+
+  const speciesOptions = (species?.traits ?? []).flatMap((trait) =>
+    trait.choice_groups.flatMap((group) => group.options),
+  );
+  for (const skillId of skillIdsFromTraitSelections(
+    state.species_trait_options,
+    speciesOptions,
+    data.skills,
+  )) {
+    ids.add(skillId);
+  }
+
+  const backgroundFeatOptions = (background?.origin_feat_choices ?? []).flatMap(
+    (group) => group.options,
+  );
+  for (const skillId of skillIdsFromTraitSelections(
+    state.origin_feat_trait_options,
+    backgroundFeatOptions,
+    data.skills,
+  )) {
+    ids.add(skillId);
+  }
+
+  const humanFeatOptions = (humanFeat?.origin_feat_choices ?? []).flatMap(
+    (group) => group.options,
+  );
+  for (const skillId of skillIdsFromTraitSelections(
+    state.human_origin_feat_trait_options,
+    humanFeatOptions,
+    data.skills,
+  )) {
+    ids.add(skillId);
+  }
+
+  return ids;
+}
+
+function skillIdsFromTraitSelections(
+  selections: CharacterBuilderState["progression_feat_trait_options"],
+  options: BuilderTraitOption[],
+  skills: CharacterBuilderData["skills"],
+): number[] {
+  const byOptionId = new Map(options.map((opt) => [opt.trait_option_id, opt]));
+  const ids: number[] = [];
+
+  for (const selection of selections) {
+    const option = byOptionId.get(selection.trait_option_id);
+    if (!option) continue;
+    const skillId =
+      option.skill_id ??
+      skills.find((skill) => skill.name === option.name)?.skill_id;
+    if (skillId != null) ids.push(skillId);
+  }
+
+  return ids;
+}
+
+function expertiseSkillIdsFromProgressionFeats(
+  data: CharacterBuilderData,
+  state: CharacterBuilderState,
+): Set<number> {
+  const result = new Set<number>();
+  const baseProficient = coreProficientSkillIds(data, state);
+
+  for (const slot of syncProgressionFeatSlots(state)) {
+    if (slot.kind !== "feat" || !slot.feat_id) continue;
+
+    const feat = data.progression_feats.find((entry) => entry.id === slot.feat_id);
+    if (!feat) continue;
+
+    const selections = progressionTraitOptionsForSlot(state, slot.at_level);
+
+    for (const group of feat.origin_feat_choices) {
+      if (!isSkillProficiencyOptionGroup(group.option_group)) continue;
+      if (!grantsExpertiseIfAlreadyProficient(group.trait_description)) continue;
+
+      for (const selection of selections) {
+        if (
+          selection.trait_id !== group.trait_id ||
+          selection.option_group !== group.option_group
+        ) {
+          continue;
+        }
+
+        const option = group.options.find(
+          (entry) => entry.trait_option_id === selection.trait_option_id,
+        );
+        if (!option) continue;
+
+        const skillId =
+          option.skill_id ??
+          data.skills.find((skill) => skill.name === option.name)?.skill_id;
+        if (skillId != null && baseProficient.has(skillId)) {
+          result.add(skillId);
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
 export function buildSkillsPayloadWithExpertise(
   data: CharacterBuilderData,
   state: CharacterBuilderState,
 ): { skill_id: number; is_proficient: boolean; has_expertise: boolean }[] {
-  const expertiseIds = new Set(
+  const classExpertiseIds = new Set(
     Object.values(state.expertise_by_trait).flat(),
   );
-  const proficient = proficientSkillOptions(data, state);
+  const featExpertiseIds = expertiseSkillIdsFromProgressionFeats(data, state);
+  const allProficientIds = proficientSkillIds(data, state);
 
-  return proficient.map((skill) => ({
-    skill_id: skill.skill_id,
+  return allProficientIds.map((skill_id) => ({
+    skill_id,
     is_proficient: true,
-    has_expertise: expertiseIds.has(skill.skill_id),
+    has_expertise:
+      classExpertiseIds.has(skill_id) || featExpertiseIds.has(skill_id),
   }));
 }

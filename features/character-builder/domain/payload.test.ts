@@ -9,6 +9,7 @@ describe("toCreateCharacterRpcBody", () => {
       class_id: 7,
       class_level: 12,
       subclass_id: 3,
+      classes: [{ class_id: 7, class_level: 12, subclass_id: 3 }],
       species_id: 1,
       background_id: 2,
       size: "Medium",

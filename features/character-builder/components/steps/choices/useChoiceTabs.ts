@@ -19,6 +19,11 @@ import {
   totalProgressionFeatSpellChoicesRequired,
 } from "@/features/character-builder/domain/spells/feat-spells";
 import {
+  effectiveEquipmentMode,
+  equipmentChoiceLabel,
+  supportsEquipmentModeToggle,
+} from "@/features/character-builder/domain/equipment/equipment-mode";
+import {
   findLockedOriginFeatSelection,
   getVisibleOriginFeatChoices,
 } from "@/features/character-builder/domain/origin-feat";
@@ -175,7 +180,7 @@ export function useChoiceTabs({
       items.push({
         id: "gear",
         label: "Equipamento",
-        badge: state.equipment_option_key ?? undefined,
+        badge: equipmentChoiceLabel(state),
       });
     }
 
@@ -191,6 +196,8 @@ export function useChoiceTabs({
     state.prepared_spell_ids.length,
     state.expertise_by_trait,
     state.equipment_option_key,
+    state.equipment_mode,
+    state.class_level,
     state.feat_spell_selections.length,
     state.class_trait_option_selections,
     state.progression_feat_slots,

@@ -8,13 +8,28 @@ import type {
   CharacterBuilderState,
   TraitOptionSelection,
 } from "@/features/character-builder/types/builder.types";
+import {
+  progressionTraitOptionsForSlot,
+  syncProgressionFeatSlots,
+} from "@/features/character-builder/domain/progression/feats";
 import { visibleTraitOptionsForGroup } from "./visibility";
 
 export function isSkillProficiencyOptionGroup(optionGroup: string): boolean {
+  const normalized = optionGroup.trim().toLowerCase();
   return (
     optionGroup === "Skill Proficiency" ||
-    optionGroup === "Skill or Tool Proficiency"
+    optionGroup === "Skill or Tool Proficiency" ||
+    normalized === "skill" ||
+    normalized === "proficiency"
   );
+}
+
+/** Feats como Observant/Keen Mind: proficiência ou expertise se já proficiente. */
+export function grantsExpertiseIfAlreadyProficient(
+  traitDescription: string | null | undefined,
+): boolean {
+  if (!traitDescription) return false;
+  return /gain expertise in it/i.test(traitDescription);
 }
 
 function resolveTraitOptionSkillId(
@@ -110,7 +125,32 @@ export function proficientSkillIds(
     ids.add(skillId);
   }
 
+  for (const skillId of progressionFeatSkillIds(data, state)) {
+    ids.add(skillId);
+  }
+
   return [...ids];
+}
+
+/** Perícias concedidas por feats de progressão (Observant, Keen Mind, etc.). */
+export function progressionFeatSkillIds(
+  data: CharacterBuilderData,
+  state: CharacterBuilderState,
+): number[] {
+  const ids: number[] = [];
+
+  for (const slot of syncProgressionFeatSlots(state)) {
+    if (slot.kind !== "feat" || !slot.feat_id) continue;
+
+    const feat = data.progression_feats.find((entry) => entry.id === slot.feat_id);
+    if (!feat) continue;
+
+    const selections = progressionTraitOptionsForSlot(state, slot.at_level);
+    const options = allTraitOptionsFromOriginFeatChoices(feat.origin_feat_choices);
+    ids.push(...skillIdsFromTraitSelections(selections, options, data.skills));
+  }
+
+  return ids;
 }
 
 export function skillIdsGrantedOutsideClass(
@@ -123,7 +163,11 @@ export function skillIdsGrantedOutsideClass(
 
 export function visibleTraitOptionsForSkillGroup(
   options: BuilderTraitOption[],
-  group: { trait_id: number; option_group: string },
+  group: {
+    trait_id: number;
+    option_group: string;
+    trait_description?: string | null;
+  },
   data: CharacterBuilderData,
   state: CharacterBuilderState,
   allSelections: TraitOptionSelection[],
@@ -131,6 +175,10 @@ export function visibleTraitOptionsForSkillGroup(
   const filtered = visibleTraitOptionsForGroup(options, group, allSelections);
 
   if (!isSkillProficiencyOptionGroup(group.option_group)) {
+    return filtered;
+  }
+
+  if (grantsExpertiseIfAlreadyProficient(group.trait_description)) {
     return filtered;
   }
 

@@ -9,6 +9,7 @@ import type {
   BuilderTraitOption,
 } from "@/features/character-builder/types/builder.types";
 import { ABILITY_LABELS } from "@/features/character-builder/components/shared/BuilderParts";
+import { MAX_CLASS_LEVEL } from "@/features/character-builder/domain/progression/levels";
 import {
   BuilderDetailBody,
   BuilderDetailCard,
@@ -131,8 +132,17 @@ export function SpeciesDetailContent({ species }: { species: BuilderSpeciesEntry
   );
 }
 
-export function ClassDetailContent({ cls }: { cls: BuilderClassEntry }) {
-  const levelOneFeatures = cls.features.filter(
+export function ClassDetailContent({
+  cls,
+  classLevel = MAX_CLASS_LEVEL,
+}: {
+  cls: BuilderClassEntry;
+  classLevel?: number;
+}) {
+  const visibleFeatures = cls.features.filter(
+    (feature) => feature.level_required <= classLevel,
+  );
+  const levelOneFeatures = visibleFeatures.filter(
     (feature) => feature.level_required === 1,
   );
 
@@ -182,10 +192,10 @@ export function ClassDetailContent({ cls }: { cls: BuilderClassEntry }) {
         </BuilderDetailSection>
       ) : null}
 
-      {cls.features.length > 0 ? (
+      {visibleFeatures.length > 0 ? (
         <BuilderDetailSection title="Progressão de classe">
           <FeatureProgressionList
-            features={cls.features}
+            features={visibleFeatures}
             formatName={featureName}
           />
         </BuilderDetailSection>
