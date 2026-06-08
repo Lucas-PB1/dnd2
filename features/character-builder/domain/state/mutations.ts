@@ -13,17 +13,18 @@ import { selectedBackground, selectedClass } from "./selectors";
 function pruneExpertiseSelections(
   state: CharacterBuilderState,
   data: CharacterBuilderData,
-): Record<number, number[]> {
+): Record<string, number[]> {
   const cls = selectedClass(data, state);
   if (!cls) return state.expertise_by_trait;
 
-  const next: Record<number, number[]> = {};
+  const next: Record<string, number[]> = {};
   for (const group of cls.expertise_choices) {
+    const key = `${group.trait_id}:${group.level_required}`;
     const eligible = new Set(
       eligibleSkillsForExpertiseGroup(data, state, group).map((s) => s.skill_id),
     );
-    next[group.trait_id] = (state.expertise_by_trait[group.trait_id] ?? []).filter(
-      (id) => eligible.has(id),
+    next[key] = (state.expertise_by_trait[key] ?? []).filter((id) =>
+      eligible.has(id),
     );
   }
   return next;

@@ -4,6 +4,7 @@ import {
   fetchCharacterBuilderDetails,
   fetchCharacterBuilderSummary,
 } from "@/features/character-builder/server";
+import { normalizeBuilderClassLevel } from "@/features/character-builder/server/types";
 
 export async function GET(request: Request) {
   try {
@@ -11,11 +12,17 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const scope = searchParams.get("scope") ?? "summary";
+    const classLevel = normalizeBuilderClassLevel(searchParams.get("class_level"));
 
     if (scope === "details") {
       const class_id = Number(searchParams.get("class_id"));
       const species_id = Number(searchParams.get("species_id"));
       const background_id = Number(searchParams.get("background_id"));
+      const subclassRaw = searchParams.get("subclass_id");
+      const subclass_id =
+        subclassRaw && Number.isInteger(Number(subclassRaw)) && Number(subclassRaw) > 0
+          ? Number(subclassRaw)
+          : null;
 
       if (
         !Number.isInteger(class_id) ||
@@ -32,11 +39,13 @@ export async function GET(request: Request) {
         class_id,
         species_id,
         background_id,
+        class_level: classLevel,
+        subclass_id,
       });
       return jsonOk(data);
     }
 
-    const data = await fetchCharacterBuilderSummary();
+    const data = await fetchCharacterBuilderSummary(classLevel);
     return jsonOk(data);
   } catch (err) {
     const status = err instanceof ApiError ? err.status : 401;

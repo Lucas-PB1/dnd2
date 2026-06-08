@@ -1,17 +1,22 @@
 import { ApiError } from "@/lib/api/errors";
 import {
-  BUILDER_SPELL_LEVEL,
+  wizardSpellbookCount,
+  maxSpellSlotLevel,
+  spellcastingProgressionForClass,
+} from "@/features/character-builder/domain/progression/spell-progression";
+import {
+  bardUsesMagicalSecrets,
+  MAGICAL_SECRETS_SPELL_LISTS,
   mapSpellRows,
   resolvePreparedProgressionSlug,
   spellKnowledgeCount,
-  WIZARD_SPELLBOOK_LEVEL1_COUNT,
 } from "@/features/character-builder/domain/spells/class-spells";
 import type {
   BuilderClassSpellcasting,
   BuilderSpellOption,
 } from "@/features/character-builder/types/builder.types";
 import type { BuilderAdminClient, ClassSpellcastingRow } from "./types";
-import { BUILDER_CLASS_LEVEL } from "./types";
+import { normalizeBuilderClassLevel } from "./types";
 
 function classNameFromJoin(
   joined: { name: string } | { name: string }[] | null | undefined,
@@ -57,8 +62,10 @@ function buildSpellcastingEntry(
   row: ClassSpellcastingRow,
   knowledgeBySlug: Map<string, number>,
   spells: BuilderSpellOption[],
+  classLevel: number,
   className?: string,
 ): BuilderClassSpellcasting | null {
+  const level = normalizeBuilderClassLevel(classLevel);
   const preparedSlug = resolvePreparedProgressionSlug(
     row.cantrip_progression,
     row.prepared_progression_slug,
@@ -67,12 +74,12 @@ function buildSpellcastingEntry(
 
   const cantripCount = spellKnowledgeCount(
     row.cantrip_progression,
-    BUILDER_SPELL_LEVEL,
+    level,
     knowledgeBySlug,
   );
   const preparedCount = spellKnowledgeCount(
     preparedSlug,
-    BUILDER_SPELL_LEVEL,
+    level,
     knowledgeBySlug,
   );
 
@@ -80,12 +87,17 @@ function buildSpellcastingEntry(
     return null;
   }
 
+  const progression = className
+    ? spellcastingProgressionForClass(className)
+    : "none";
+
   return {
     spellcasting_ability: row.spellcasting_ability,
     cantrip_count: cantripCount,
     prepared_count: preparedCount,
-    spellbook_count: row.uses_spellbook ? WIZARD_SPELLBOOK_LEVEL1_COUNT : 0,
+    spellbook_count: row.uses_spellbook ? wizardSpellbookCount(level) : 0,
     uses_spellbook: row.uses_spellbook,
+    max_spell_level: maxSpellSlotLevel(level, progression),
     spells,
   };
 }
@@ -115,9 +127,44 @@ async function fetchSpellsForClassName(
   return mapSpellRows(spellRows ?? []);
 }
 
+function mergeSpellOptions(
+  lists: BuilderSpellOption[][],
+): BuilderSpellOption[] {
+  const byId = new Map<number, BuilderSpellOption>();
+  for (const spells of lists) {
+    for (const spell of spells) {
+      byId.set(spell.spell_id, spell);
+    }
+  }
+  return [...byId.values()].sort((a, b) =>
+    a.level !== b.level
+      ? a.level - b.level
+      : a.name.localeCompare(b.name, "pt-BR"),
+  );
+}
+
+async function fetchPreparedSpellPool(
+  admin: BuilderAdminClient,
+  className: string,
+  classLevel: number,
+): Promise<BuilderSpellOption[] | undefined> {
+  if (!bardUsesMagicalSecrets(className, classLevel)) {
+    return undefined;
+  }
+
+  const lists = await Promise.all(
+    MAGICAL_SECRETS_SPELL_LISTS.map((name) =>
+      fetchSpellsForClassName(admin, name),
+    ),
+  );
+  return mergeSpellOptions(lists);
+}
+
 export async function fetchAllClassSpellcasting(
   admin: BuilderAdminClient,
+  classLevel: number,
 ): Promise<Map<number, BuilderClassSpellcasting | null>> {
+  const level = normalizeBuilderClassLevel(classLevel);
   const { data: rows, error } = await admin
     .from("class_spellcasting")
     .select(
@@ -140,18 +187,20 @@ export async function fetchAllClassSpellcasting(
       ),
     ];
   });
-  const knowledgeBySlug = await fetchSpellKnowledgeCounts(
-    admin,
-    slugs,
-    BUILDER_CLASS_LEVEL,
-  );
+  const knowledgeBySlug = await fetchSpellKnowledgeCounts(admin, slugs, level);
 
   const result = new Map<number, BuilderClassSpellcasting | null>();
   for (const row of rows ?? []) {
     const className = classNameFromJoin(
       row.classes as { name: string } | { name: string }[] | null,
     );
-    const entry = buildSpellcastingEntry(row, knowledgeBySlug, [], className);
+    const entry = buildSpellcastingEntry(
+      row,
+      knowledgeBySlug,
+      [],
+      level,
+      className,
+    );
     if (entry) {
       result.set(row.class_id, entry);
     }
@@ -163,7 +212,9 @@ export async function fetchClassSpellcasting(
   admin: BuilderAdminClient,
   classId: number,
   className: string,
+  classLevel: number,
 ): Promise<BuilderClassSpellcasting | null> {
+  const level = normalizeBuilderClassLevel(classLevel);
   const { data: castingRow, error: castingError } = await admin
     .from("class_spellcasting")
     .select(
@@ -183,17 +234,29 @@ export async function fetchClassSpellcasting(
   const knowledgeBySlug = await fetchSpellKnowledgeCounts(
     admin,
     [castingRow.cantrip_progression, castingRow.prepared_progression_slug, preparedSlug],
-    BUILDER_CLASS_LEVEL,
+    level,
   );
 
   const base = buildSpellcastingEntry(
     castingRow,
     knowledgeBySlug,
     [],
+    level,
     className,
   );
   if (!base) return null;
 
   const spells = await fetchSpellsForClassName(admin, className);
-  return { ...base, spells };
+  const preparedSpellPool = await fetchPreparedSpellPool(
+    admin,
+    className,
+    level,
+  );
+
+  return {
+    ...base,
+    spells,
+    prepared_spell_pool: preparedSpellPool,
+    uses_magical_secrets: preparedSpellPool !== undefined,
+  };
 }

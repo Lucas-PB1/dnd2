@@ -15,8 +15,16 @@ import {
   getExpertiseSelectionsForTrait,
   totalExpertiseChoicesRequired,
 } from "@/features/character-builder/hooks/useCharacterBuilder";
-import { totalFeatSpellChoicesRequired } from "@/features/character-builder/domain/spells/feat-spells";
-import { abilityModifier } from "@/features/character-builder/domain/abilities/abilities";
+import { totalFeatSpellChoicesRequired, totalProgressionFeatSpellChoicesRequired } from "@/features/character-builder/domain/spells/feat-spells";
+import {
+  abilityModifier,
+} from "@/features/character-builder/domain/abilities/abilities";
+import { computeMaxHp } from "@/features/character-builder/domain/progression/hp";
+import { proficiencyBonusForLevel } from "@/features/character-builder/domain/progression/levels";
+import {
+  formatSpellSlotsPreview,
+  spellSlotsForClass,
+} from "@/features/character-builder/domain/progression/spell-slots";
 
 type BuilderPreviewPanelProps = {
   data: CharacterBuilderData | null;
@@ -48,7 +56,13 @@ export function BuilderPreviewPanel({ data, state }: BuilderPreviewPanelProps) {
   const species = data?.species.find((s) => s.id === state.species_id);
   const background = data?.backgrounds.find((b) => b.id === state.background_id);
   const cls = data?.classes.find((c) => c.id === state.class_id);
+  const subclass = cls?.subclasses.find((sub) => sub.id === state.subclass_id);
   const abilities = data ? computePreviewAbilities(data, state) : null;
+  const profBonus = proficiencyBonusForLevel(state.class_level);
+  const previewHp =
+    cls && abilities
+      ? computeMaxHp(cls.hit_die, abilityModifier(abilities.CON), state.class_level)
+      : null;
 
   const maxSkills =
     cls?.skill_choices.reduce((sum, g) => sum + g.choice_count, 0) ?? 0;
@@ -58,7 +72,10 @@ export function BuilderPreviewPanel({ data, state }: BuilderPreviewPanelProps) {
   );
   const featSpellRequired =
     totalFeatSpellChoicesRequired(background?.origin_feat_spellcasting) +
-    totalFeatSpellChoicesRequired(humanFeat?.spellcasting);
+    totalFeatSpellChoicesRequired(humanFeat?.spellcasting) +
+    (data
+      ? totalProgressionFeatSpellChoicesRequired(data.progression_feats, state)
+      : 0);
   const showFeatSpells = featSpellRequired > 0;
   const showSpells =
     classRequiresSpellSelection(spellcasting) || showFeatSpells;
@@ -67,9 +84,13 @@ export function BuilderPreviewPanel({ data, state }: BuilderPreviewPanelProps) {
   const expertiseRequired = totalExpertiseChoicesRequired(expertiseGroups);
   const expertiseSelected = expertiseGroups.reduce(
     (sum, group) =>
-      sum + getExpertiseSelectionsForTrait(state, group.trait_id).length,
+      sum + getExpertiseSelectionsForTrait(state, group).length,
     0,
   );
+  const spellSlotPreview =
+    cls && spellcasting
+      ? formatSpellSlotsPreview(spellSlotsForClass(cls.name, state.class_level))
+      : null;
 
   return (
     <aside
@@ -92,7 +113,26 @@ export function BuilderPreviewPanel({ data, state }: BuilderPreviewPanelProps) {
             <PreviewRow label="Tamanho" value={state.size} />
           ) : null}
           <PreviewRow label="Antecedente" value={background?.name ?? null} />
-          <PreviewRow label="Classe" value={cls?.name ?? null} />
+          <PreviewRow
+            label="Classe"
+            value={
+              cls
+                ? `${cls.name}${subclass ? ` (${subclass.name})` : ""}${state.class_level > 1 ? ` ${state.class_level}` : ""}`
+                : null
+            }
+          />
+          {state.class_id ? (
+            <>
+              <PreviewRow label="Nível" value={String(state.class_level)} />
+              <PreviewRow label="Proficiência" value={formatModifier(profBonus)} />
+              {previewHp !== null ? (
+                <PreviewRow label="PV máx." value={String(previewHp)} />
+              ) : null}
+              {spellSlotPreview ? (
+                <PreviewRow label="Slots" value={spellSlotPreview} />
+              ) : null}
+            </>
+          ) : null}
           {background?.origin_feat_name ? (
             <PreviewRow
               label="Feat de origem"

@@ -3,6 +3,7 @@ import type {
   BuilderBackgroundEntry,
   BuilderClassEntry,
   BuilderOriginFeat,
+  BuilderProgressionFeat,
   BuilderSpeciesEntry,
   CharacterBuilderState,
 } from "@/features/character-builder/types/builder.types";
@@ -15,11 +16,21 @@ import {
 import {
   featRequiresSpellSelection,
   totalFeatSpellChoicesRequired,
+  totalProgressionFeatSpellChoicesRequired,
 } from "@/features/character-builder/domain/spells/feat-spells";
 import {
   findLockedOriginFeatSelection,
   getVisibleOriginFeatChoices,
 } from "@/features/character-builder/domain/origin-feat";
+import {
+  classRequiresOptionalFeatureSelection,
+  selectionsForOptionalGroup,
+  totalOptionalFeatureChoicesRequired,
+} from "@/features/character-builder/domain/optional-features";
+import {
+  progressionFeatLevelsForClass,
+  syncProgressionFeatSlots,
+} from "@/features/character-builder/domain/progression/feats";
 import type { ChoiceTabItem } from "./types";
 
 type UseChoiceTabsInput = {
@@ -27,6 +38,7 @@ type UseChoiceTabsInput = {
   species: BuilderSpeciesEntry | undefined;
   background: BuilderBackgroundEntry | undefined;
   humanFeat: BuilderOriginFeat | undefined;
+  progressionFeats: BuilderProgressionFeat[];
   state: CharacterBuilderState;
 };
 
@@ -35,6 +47,7 @@ export function useChoiceTabs({
   species,
   background,
   humanFeat,
+  progressionFeats,
   state,
 }: UseChoiceTabsInput): ChoiceTabItem[] {
   return useMemo(() => {
@@ -51,7 +64,15 @@ export function useChoiceTabs({
     const hasFeats =
       species.name === "Human" ||
       lockedOriginFeat !== null ||
-      visibleOriginFeatChoices.length > 0;
+      visibleOriginFeatChoices.length > 0 ||
+      progressionFeatLevelsForClass(state.class_level).length > 0;
+    const optionalGroups = cls.optional_feature_groups ?? [];
+    const hasOptional = classRequiresOptionalFeatureSelection(optionalGroups);
+    const optionalRequired = totalOptionalFeatureChoicesRequired(optionalGroups);
+    const optionalSelected = optionalGroups.reduce(
+      (sum, group) => sum + selectionsForOptionalGroup(state, group).length,
+      0,
+    );
     const hasGear = background.equipment_options.length > 0;
     const spellcasting = cls.spellcasting;
     const hasClassSpells = classRequiresSpellSelection(spellcasting);
@@ -59,8 +80,16 @@ export function useChoiceTabs({
       background.origin_feat_spellcasting,
     );
     const hasHumanFeatSpells = featRequiresSpellSelection(humanFeat?.spellcasting);
+    const progressionFeatSpellRequired = totalProgressionFeatSpellChoicesRequired(
+      progressionFeats,
+      state,
+    );
+    const hasProgressionFeatSpells = progressionFeatSpellRequired > 0;
     const hasSpells =
-      hasClassSpells || hasBackgroundFeatSpells || hasHumanFeatSpells;
+      hasClassSpells ||
+      hasBackgroundFeatSpells ||
+      hasHumanFeatSpells ||
+      hasProgressionFeatSpells;
 
     const items: ChoiceTabItem[] = [];
 
@@ -68,8 +97,8 @@ export function useChoiceTabs({
     const hasExpertise = classRequiresExpertiseSelection(expertiseGroups);
     const expertiseRequired = totalExpertiseChoicesRequired(expertiseGroups);
     const expertiseSelected = expertiseGroups.reduce(
-      (sum, group) =>
-        sum + getExpertiseSelectionsForTrait(state, group.trait_id).length,
+    (sum, group) =>
+      sum + getExpertiseSelectionsForTrait(state, group).length,
       0,
     );
 
@@ -88,6 +117,14 @@ export function useChoiceTabs({
       });
     }
 
+    if (hasOptional) {
+      items.push({
+        id: "optional",
+        label: "Classe",
+        badge: `${optionalSelected}/${optionalRequired}`,
+      });
+    }
+
     if (hasSpells) {
       const classRequired = spellcasting
         ? spellcasting.cantrip_count +
@@ -101,7 +138,8 @@ export function useChoiceTabs({
         : 0;
       const featRequired =
         totalFeatSpellChoicesRequired(background.origin_feat_spellcasting) +
-        totalFeatSpellChoicesRequired(humanFeat?.spellcasting);
+        totalFeatSpellChoicesRequired(humanFeat?.spellcasting) +
+        progressionFeatSpellRequired;
       const featSelected = state.feat_spell_selections.length;
       const totalRequired = classRequired + featRequired;
       const totalSelected = classSelected + featSelected;
@@ -120,7 +158,17 @@ export function useChoiceTabs({
     }
 
     if (hasFeats) {
-      items.push({ id: "feats", label: "Feats" });
+      const progressionSlots = syncProgressionFeatSlots(state);
+      const progressionFilled = progressionSlots.filter((slot) => slot.kind).length;
+      const progressionTotal = progressionSlots.length;
+      items.push({
+        id: "feats",
+        label: "Feats",
+        badge:
+          progressionTotal > 0
+            ? `Prog. ${progressionFilled}/${progressionTotal}`
+            : undefined,
+      });
     }
 
     if (hasGear) {
@@ -144,7 +192,10 @@ export function useChoiceTabs({
     state.expertise_by_trait,
     state.equipment_option_key,
     state.feat_spell_selections.length,
+    state.class_trait_option_selections,
+    state.progression_feat_slots,
     state.human_origin_feat_id,
+    progressionFeats,
     background?.origin_feat_spellcasting,
   ]);
 }

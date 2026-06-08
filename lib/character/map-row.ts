@@ -66,12 +66,19 @@ export function buildCreateCharacterRpcPayload(payload: {
   species_id: number;
   background_id: number;
   class_id: number;
+  class_level?: number;
+  subclass_id?: number | null;
 }) {
+  const class_level = payload.class_level ?? 1;
   return {
     name: payload.name.trim(),
     species_id: payload.species_id,
     background_id: payload.background_id,
-    classes: [{ class_id: payload.class_id, class_level: 1 }],
+    classes: [{
+      class_id: payload.class_id,
+      class_level,
+      ...(payload.subclass_id ? { subclass_id: payload.subclass_id } : {}),
+    }],
   };
 }
 

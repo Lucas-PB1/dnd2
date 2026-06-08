@@ -38,7 +38,14 @@ export function ChoicesGearTab({
   background,
 }: ChoicesGearTabProps) {
   return (
-    <section>
+    <section className="space-y-3">
+      {state.class_level > 1 ? (
+        <p className="rounded-md border border-border/60 bg-muted/20 px-3 py-2 text-xs text-muted">
+          Simplificação v1: personagens acima do nível 1 usam o pacote de
+          equipamento do antecedente (como no nível 1). Ouro inicial
+          proporcional ao nível (DMG) fica para uma versão futura.
+        </p>
+      ) : null}
       {background.equipment_options.length === 0 ? (
         <p className="text-sm text-muted">
           Nenhuma opção de equipamento cadastrada.

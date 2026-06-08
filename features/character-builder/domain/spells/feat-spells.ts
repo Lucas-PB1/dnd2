@@ -1,6 +1,7 @@
 import type {
   BuilderFeatSpellcasting,
   BuilderOriginFeatChoice,
+  BuilderProgressionFeat,
   BuilderSpellOption,
   CharacterBuilderData,
   CharacterBuilderState,
@@ -9,6 +10,12 @@ import type {
   TraitOptionSelection,
 } from "@/features/character-builder/types/builder.types";
 import { mergeOriginFeatTraitOptions } from "@/features/character-builder/domain/origin-feat";
+import {
+  progressionSlotKey,
+  progressionTraitOptionsForSlot,
+  syncProgressionFeatSlots,
+} from "@/features/character-builder/domain/progression/feats";
+import type { ProgressionFeatLevel } from "@/features/character-builder/types/builder.types";
 import { selectionKey } from "@/features/character-builder/domain/utils";
 
 export type TraitSpellChoiceRpc = {
@@ -101,17 +108,37 @@ export function spellsForFeatGroup(
   );
 }
 
+export function progressionFeatSpellKeyPrefix(
+  atLevel: ProgressionFeatLevel,
+): string {
+  return `${progressionSlotKey(atLevel)}:`;
+}
+
+export function totalProgressionFeatSpellChoicesRequired(
+  progressionFeats: BuilderProgressionFeat[],
+  state: CharacterBuilderState,
+): number {
+  return syncProgressionFeatSlots(state).reduce((sum, slot) => {
+    if (slot.kind !== "feat" || !slot.feat_id) return sum;
+    const feat = progressionFeats.find((entry) => entry.id === slot.feat_id);
+    return sum + totalFeatSpellChoicesRequired(feat?.spellcasting);
+  }, 0);
+}
+
 export function getFeatSpellSelectionsForSource(
   state: CharacterBuilderState,
   source: FeatSpellSource,
   traitId: number,
   choiceGroup: string,
+  selectionKeyPrefix?: string,
 ): FeatSpellSelection[] {
   return state.feat_spell_selections.filter(
     (entry) =>
       entry.source === source &&
       entry.trait_id === traitId &&
-      entry.choice_group === choiceGroup,
+      entry.choice_group === choiceGroup &&
+      (selectionKeyPrefix === undefined ||
+        entry.selection_key.startsWith(selectionKeyPrefix)),
   );
 }
 
@@ -124,6 +151,7 @@ export function toggleFeatSpellInGroup(
     choice_count: number;
     spell_level: number;
     spell_id: number;
+    selectionKeyPrefix?: string;
   },
 ): CharacterBuilderState {
   const selected = getFeatSpellSelectionsForSource(
@@ -131,14 +159,13 @@ export function toggleFeatSpellInGroup(
     params.source,
     params.trait_id,
     params.choice_group,
+    params.selectionKeyPrefix,
   );
   const existing = selected.find((entry) => entry.spell_id === params.spell_id);
 
   if (existing) {
-    const slotIndex = Number.parseInt(
-      existing.selection_key.split(":").at(-1) ?? "0",
-      10,
-    );
+    const slotPart = existing.selection_key.split(":").at(-1) ?? "0";
+    const slotIndex = Number.parseInt(slotPart, 10);
     return toggleFeatSpell(state, {
       ...params,
       slot_index: Number.isNaN(slotIndex) ? 0 : slotIndex,
@@ -151,7 +178,15 @@ export function toggleFeatSpellInGroup(
 
   let slotIndex = 0;
   const usedSlots = new Set(selected.map((entry) => entry.selection_key));
-  while (usedSlots.has(selectionKey(params.choice_group, slotIndex))) {
+  while (
+    usedSlots.has(
+      buildFeatSpellSelectionKey(
+        params.choice_group,
+        slotIndex,
+        params.selectionKeyPrefix,
+      ),
+    )
+  ) {
     slotIndex += 1;
   }
 
@@ -159,6 +194,15 @@ export function toggleFeatSpellInGroup(
     ...params,
     slot_index: slotIndex,
   });
+}
+
+function buildFeatSpellSelectionKey(
+  choiceGroup: string,
+  slotIndex: number,
+  selectionKeyPrefix?: string,
+): string {
+  const key = selectionKey(choiceGroup, slotIndex);
+  return selectionKeyPrefix ? `${selectionKeyPrefix}${key}` : key;
 }
 
 export function toggleFeatSpell(
@@ -171,15 +215,23 @@ export function toggleFeatSpell(
     spell_level: number;
     slot_index: number;
     spell_id: number;
+    selectionKeyPrefix?: string;
   },
 ): CharacterBuilderState {
-  const selection_key = selectionKey(params.choice_group, params.slot_index);
+  const selection_key = buildFeatSpellSelectionKey(
+    params.choice_group,
+    params.slot_index,
+    params.selectionKeyPrefix,
+  );
+  const matchesSource = (entry: FeatSpellSelection) =>
+    entry.source === params.source &&
+    entry.trait_id === params.trait_id &&
+    entry.choice_group === params.choice_group &&
+    (params.selectionKeyPrefix === undefined ||
+      entry.selection_key.startsWith(params.selectionKeyPrefix));
+
   const existing = state.feat_spell_selections.find(
-    (entry) =>
-      entry.source === params.source &&
-      entry.trait_id === params.trait_id &&
-      entry.choice_group === params.choice_group &&
-      entry.selection_key === selection_key,
+    (entry) => matchesSource(entry) && entry.selection_key === selection_key,
   );
 
   if (existing?.spell_id === params.spell_id) {
@@ -192,30 +244,15 @@ export function toggleFeatSpell(
   }
 
   const withoutSlot = state.feat_spell_selections.filter(
-    (entry) =>
-      !(
-        entry.source === params.source &&
-        entry.trait_id === params.trait_id &&
-        entry.choice_group === params.choice_group &&
-        entry.selection_key === selection_key
-      ),
+    (entry) => !(matchesSource(entry) && entry.selection_key === selection_key),
   );
 
   const withoutDuplicateSpell = withoutSlot.filter(
-    (entry) =>
-      !(
-        entry.source === params.source &&
-        entry.trait_id === params.trait_id &&
-        entry.choice_group === params.choice_group &&
-        entry.spell_id === params.spell_id
-      ),
+    (entry) => !(matchesSource(entry) && entry.spell_id === params.spell_id),
   );
 
-  const currentInGroup = withoutDuplicateSpell.filter(
-    (entry) =>
-      entry.source === params.source &&
-      entry.trait_id === params.trait_id &&
-      entry.choice_group === params.choice_group,
+  const currentInGroup = withoutDuplicateSpell.filter((entry) =>
+    matchesSource(entry),
   );
 
   if (!existing && currentInGroup.length >= params.choice_count) {
@@ -246,6 +283,7 @@ function validateFeatSpellSource(
   lockedSpellListName: string | null | undefined,
   state: CharacterBuilderState,
   source: FeatSpellSource,
+  selectionKeyPrefix?: string,
 ): string | null {
   const listSelection = resolveFeatSpellListSelection(
     spellcasting,
@@ -263,6 +301,7 @@ function validateFeatSpellSource(
       source,
       group.trait_id,
       group.choice_group,
+      selectionKeyPrefix,
     );
     if (selected.length !== group.choice_count) {
       return `Selecione ${group.choice_count} magia(s) de talento: ${group.choice_group} (${label}).`;
@@ -334,6 +373,25 @@ export function validateFeatSpellSelections(
     }
   }
 
+  for (const slot of syncProgressionFeatSlots(state)) {
+    if (slot.kind !== "feat" || !slot.feat_id) continue;
+
+    const feat = data.progression_feats.find((entry) => entry.id === slot.feat_id);
+    if (!featRequiresSpellSelection(feat?.spellcasting)) continue;
+
+    const error = validateFeatSpellSource(
+      `${feat!.name} (nível ${slot.at_level})`,
+      feat!.spellcasting!,
+      progressionTraitOptionsForSlot(state, slot.at_level),
+      feat!.origin_feat_choices,
+      null,
+      state,
+      "progression",
+      progressionFeatSpellKeyPrefix(slot.at_level),
+    );
+    if (error) return error;
+  }
+
   return null;
 }
 
@@ -346,6 +404,7 @@ function buildFeatSpellRpcForSource(
   source: FeatSpellSource,
   source_type: string,
   source_id: number,
+  selectionKeyPrefix?: string,
 ): TraitSpellChoiceRpc[] {
   const listSelection = resolveFeatSpellListSelection(
     spellcasting,
@@ -363,6 +422,7 @@ function buildFeatSpellRpcForSource(
       source,
       group.trait_id,
       group.choice_group,
+      selectionKeyPrefix,
     );
 
     for (const entry of selected) {
@@ -431,6 +491,27 @@ export function buildFeatSpellsRpcPayload(
         ),
       );
     }
+  }
+
+  for (const slot of syncProgressionFeatSlots(state)) {
+    if (slot.kind !== "feat" || !slot.feat_id) continue;
+
+    const feat = data.progression_feats.find((entry) => entry.id === slot.feat_id);
+    if (!featRequiresSpellSelection(feat?.spellcasting)) continue;
+
+    entries.push(
+      ...buildFeatSpellRpcForSource(
+        feat!.spellcasting!,
+        progressionTraitOptionsForSlot(state, slot.at_level),
+        feat!.origin_feat_choices,
+        null,
+        state,
+        "progression",
+        "class",
+        state.class_id ?? 0,
+        progressionFeatSpellKeyPrefix(slot.at_level),
+      ),
+    );
   }
 
   return entries;

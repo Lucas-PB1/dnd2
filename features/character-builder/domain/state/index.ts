@@ -39,5 +39,10 @@ export {
   toggleExpertiseSkill,
 } from "../expertise/class-expertise";
 export { classRequiresSpellSelection } from "../spells/class-spells";
+export {
+  proficiencyBonusForLevel,
+  featChoicesRequired,
+  computeMaxHp,
+} from "../progression";
 export { selectionKey, ABILITY_KEYS } from "../utils";
 export { BUILDER_STEPS } from "../../types/builder.types";

@@ -60,6 +60,7 @@ export async function createCharacterFromBuilderState(
     class_id: state.class_id,
     species_id: state.species_id,
     background_id: state.background_id,
+    class_level: state.class_level,
   });
   const payload = buildRpcPayloadFromBuilderState(data, state);
   const rpcBody = toCreateCharacterRpcBody(payload);

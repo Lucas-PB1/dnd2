@@ -30,10 +30,12 @@ import {
   mergeBuilderCatalog,
 } from "@/features/character-builder/services/builder.service";
 import { applyLockedOriginFeatToState } from "@/features/character-builder/domain/origin-feat";
+import { clampClassLevel } from "@/features/character-builder/domain/progression/levels";
 
 export function CharacterBuilderWizard() {
   const router = useRouter();
   const [summary, setSummary] = useState<CharacterBuilderSummary | null>(null);
+  const [summaryLevel, setSummaryLevel] = useState<number | null>(null);
   const [details, setDetails] = useState<Partial<CharacterBuilderData> | null>(
     null,
   );
@@ -53,11 +55,35 @@ export function CharacterBuilderWizard() {
   );
 
   useEffect(() => {
-    fetchCharacterBuilderSummary()
-      .then(setSummary)
+    fetchCharacterBuilderSummary(1)
+      .then((loaded) => {
+        setSummary(loaded);
+        setSummaryLevel(1);
+      })
       .catch(() => {
         /* prefetch opcional */
       });
+  }, []);
+
+  const refetchSummary = useCallback(async (level: number) => {
+    const clamped = clampClassLevel(level);
+    setLoadingCatalog(true);
+    try {
+      const loaded = await fetchCharacterBuilderSummary(clamped);
+      setSummary(loaded);
+      setSummaryLevel(clamped);
+      setLoadError(null);
+      return loaded;
+    } catch (err) {
+      setLoadError(
+        err instanceof Error
+          ? err.message
+          : "Não foi possível carregar o catálogo.",
+      );
+      return null;
+    } finally {
+      setLoadingCatalog(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -72,13 +98,16 @@ export function CharacterBuilderWizard() {
         cantrip_spell_ids: [],
         spellbook_spell_ids: [],
         prepared_spell_ids: [],
+        feat_spell_selections: [],
         expertise_by_trait: {},
+        class_trait_option_selections: [],
+        progression_feat_trait_options: [],
       }));
     });
     return () => {
       active = false;
     };
-  }, [state.class_id, state.species_id, state.background_id]);
+  }, [state.class_id, state.species_id, state.background_id, state.class_level, state.subclass_id]);
 
   useEffect(() => {
     if (!data?.details_loaded || !state.background_id) return;
@@ -115,22 +144,9 @@ export function CharacterBuilderWizard() {
   const needsDetails = state.step === 4;
 
   const ensureSummary = async (): Promise<CharacterBuilderSummary | null> => {
-    if (summary) return summary;
-    setLoadingCatalog(true);
-    try {
-      const loaded = await fetchCharacterBuilderSummary();
-      setSummary(loaded);
-      return loaded;
-    } catch (err) {
-      setLoadError(
-        err instanceof Error
-          ? err.message
-          : "Não foi possível carregar o catálogo.",
-      );
-      return null;
-    } finally {
-      setLoadingCatalog(false);
-    }
+    const level = clampClassLevel(state.class_level);
+    if (summary && summaryLevel === level) return summary;
+    return refetchSummary(level);
   };
 
   const ensureDetails = async (): Promise<boolean> => {
@@ -138,7 +154,8 @@ export function CharacterBuilderWizard() {
       return false;
     }
 
-    const key = `${state.class_id}:${state.species_id}:${state.background_id}`;
+    const level = clampClassLevel(state.class_level);
+    const key = `${state.class_id}:${state.species_id}:${state.background_id}:${level}:${state.subclass_id ?? 0}`;
     if (details?.details_loaded && detailsKey === key) return true;
 
     setLoadingDetails(true);
@@ -147,6 +164,8 @@ export function CharacterBuilderWizard() {
         class_id: state.class_id,
         species_id: state.species_id,
         background_id: state.background_id,
+        class_level: level,
+        subclass_id: state.subclass_id,
       });
       setDetails(loaded);
       setDetailsKey(key);
@@ -173,6 +192,11 @@ export function CharacterBuilderWizard() {
     }
 
     if (state.step === 0) {
+      const loaded = await ensureSummary();
+      if (!loaded) return;
+    }
+
+    if (state.step === 2) {
       const loaded = await ensureSummary();
       if (!loaded) return;
     }
@@ -273,11 +297,18 @@ export function CharacterBuilderWizard() {
           <StepBackground data={data} state={state} onChange={patchState} />
         );
       case 3:
-        if (!data) {
+        if (!data || loadingCatalog) {
           return catalogSkeleton;
         }
         return (
-          <StepClass data={data} state={state} onChange={patchState} />
+          <StepClass
+            data={data}
+            state={state}
+            onChange={patchState}
+            onClassLevelChange={(level) => {
+              void refetchSummary(level);
+            }}
+          />
         );
       case 4:
         if (stepBusy || !data?.details_loaded) {
@@ -308,7 +339,7 @@ export function CharacterBuilderWizard() {
       default:
         return null;
     }
-  }, [data, state, patchState, stepBusy]);
+  }, [data, state, patchState, stepBusy, loadingCatalog, refetchSummary]);
 
   const footer = (
     <>

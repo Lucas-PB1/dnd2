@@ -5,6 +5,7 @@ import type {
   CharacterBuilderSummary,
 } from "../types/builder.types";
 import { mergeBuilderData } from "../domain/merge";
+import { clampClassLevel } from "../domain/progression/levels";
 
 async function parseResponse<T>(response: Response): Promise<T> {
   const data: unknown = await response.json();
@@ -23,9 +24,19 @@ async function parseResponse<T>(response: Response): Promise<T> {
 
 const fetchOptions: RequestInit = { credentials: "include" };
 
-export async function fetchCharacterBuilderSummary(): Promise<CharacterBuilderSummary> {
+function builderQueryParams(classLevel: number): URLSearchParams {
+  return new URLSearchParams({
+    class_level: String(clampClassLevel(classLevel)),
+  });
+}
+
+export async function fetchCharacterBuilderSummary(
+  classLevel = 1,
+): Promise<CharacterBuilderSummary> {
+  const params = builderQueryParams(classLevel);
+  params.set("scope", "summary");
   const response = await fetch(
-    "/api/characters/builder-data?scope=summary",
+    `/api/characters/builder-data?${params.toString()}`,
     fetchOptions,
   );
   return parseResponse<CharacterBuilderSummary>(response);
@@ -35,13 +46,17 @@ export async function fetchCharacterBuilderDetails(request: {
   class_id: number;
   species_id: number;
   background_id: number;
+  class_level: number;
+  subclass_id?: number | null;
 }): Promise<Partial<CharacterBuilderData>> {
-  const params = new URLSearchParams({
-    scope: "details",
-    class_id: String(request.class_id),
-    species_id: String(request.species_id),
-    background_id: String(request.background_id),
-  });
+  const params = builderQueryParams(request.class_level);
+  params.set("scope", "details");
+  params.set("class_id", String(request.class_id));
+  params.set("species_id", String(request.species_id));
+  params.set("background_id", String(request.background_id));
+  if (request.subclass_id) {
+    params.set("subclass_id", String(request.subclass_id));
+  }
   const response = await fetch(
     `/api/characters/builder-data?${params.toString()}`,
     fetchOptions,

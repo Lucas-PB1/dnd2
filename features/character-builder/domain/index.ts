@@ -12,3 +12,4 @@ export {
   buildRpcPayloadFromBuilderState,
   toCreateCharacterRpcBody,
 } from "./payload";
+export * from "./progression";

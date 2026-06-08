@@ -3,6 +3,7 @@ import type {
   BuilderClassEntry,
   BuilderClassFeature,
   BuilderOriginFeat,
+  BuilderSubclassSummary,
   BuilderSpellOption,
   BuilderSpeciesEntry,
   BuilderTraitOption,
@@ -386,6 +387,28 @@ export function SpellDetailContent({ spell }: { spell: BuilderSpellOption }) {
           )}
         </div>
       </BuilderDetailCard>
+    </BuilderDetailBody>
+  );
+}
+
+export function SubclassDetailContent({
+  subclass,
+}: {
+  subclass: BuilderSubclassSummary;
+}) {
+  return (
+    <BuilderDetailBody>
+      {subclass.description ? (
+        <BuilderDetailText>{subclass.description}</BuilderDetailText>
+      ) : null}
+      {subclass.features.length > 0 ? (
+        <BuilderDetailSection title="Progressão">
+          <FeatureProgressionList
+            features={subclass.features}
+            formatName={(name) => stripNamePrefix(name, subclass.name)}
+          />
+        </BuilderDetailSection>
+      ) : null}
     </BuilderDetailBody>
   );
 }

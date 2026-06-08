@@ -12,9 +12,18 @@ import {
 } from "@/features/character-builder/hooks/useCharacterBuilder";
 import {
   cantripsForClass,
-  level1SpellsForClass,
+  leveledSpellsForClass,
+  preparedSpellPoolForClass,
 } from "@/features/character-builder/domain/spells/class-spells";
-import { featRequiresSpellSelection } from "@/features/character-builder/domain/spells/feat-spells";
+import {
+  featRequiresSpellSelection,
+  progressionFeatSpellKeyPrefix,
+  totalProgressionFeatSpellChoicesRequired,
+} from "@/features/character-builder/domain/spells/feat-spells";
+import {
+  progressionTraitOptionsForSlot,
+  syncProgressionFeatSlots,
+} from "@/features/character-builder/domain/progression/feats";
 import { mergeOriginFeatTraitOptions } from "@/features/character-builder/domain/origin-feat";
 import { spellIdsTakenElsewhere, visibleSpells } from "@/features/character-builder/domain/selection";
 import type { ChoicesTabProps } from "./types";
@@ -58,8 +67,27 @@ export function ChoicesSpellsTab({
     background.origin_feat_spellcasting,
   );
   const hasHumanFeatSpells = featRequiresSpellSelection(humanFeat?.spellcasting);
+  const progressionFeatSpellSlots = syncProgressionFeatSlots(state).filter((slot) => {
+    if (slot.kind !== "feat" || !slot.feat_id) return false;
+    const feat = data.progression_feats.find((entry) => entry.id === slot.feat_id);
+    return featRequiresSpellSelection(feat?.spellcasting);
+  });
+  const hasProgressionFeatSpells = progressionFeatSpellSlots.length > 0;
   const hasSpells =
-    hasClassSpells || hasBackgroundFeatSpells || hasHumanFeatSpells;
+    hasClassSpells ||
+    hasBackgroundFeatSpells ||
+    hasHumanFeatSpells ||
+    hasProgressionFeatSpells;
+
+  const maxSpellLevel = cls.spellcasting?.max_spell_level ?? 1;
+  const preparedPool = cls.spellcasting
+    ? preparedSpellPoolForClass(cls.spellcasting, maxSpellLevel)
+    : [];
+  const spellbookPool = cls.spellcasting
+    ? leveledSpellsForClass(cls.spellcasting, maxSpellLevel)
+    : [];
+  const leveledLabel =
+    maxSpellLevel <= 1 ? "nível 1" : `nível 1–${maxSpellLevel}`;
 
   if (!hasSpells) return null;
 
@@ -94,9 +122,9 @@ export function ChoicesSpellsTab({
       {cls.spellcasting?.uses_spellbook ? (
         <SpellPickerSection
           title="Grimório"
-          hint={`Adicione ${cls.spellcasting.spellbook_count} magia(s) de nível 1`}
+          hint={`Adicione ${cls.spellcasting.spellbook_count} magia(s) (${leveledLabel})`}
           spells={visibleSpells(
-            level1SpellsForClass(cls.spellcasting),
+            spellbookPool,
             state.spellbook_spell_ids,
             spellIdsTakenElsewhere(state, { spellbook: true }),
           )}
@@ -115,16 +143,18 @@ export function ChoicesSpellsTab({
         <SpellPickerSection
           title="Magias preparadas"
           hint={
-            cls.spellcasting.uses_spellbook
-              ? `Escolha ${cls.spellcasting.prepared_count} magia(s) do grimório`
-              : `Escolha ${cls.spellcasting.prepared_count} magia(s) de nível 1`
+            cls.spellcasting.uses_magical_secrets
+              ? `Escolha ${cls.spellcasting.prepared_count} magia(s) (Magical Secrets: listas Bardo, Clérigo, Druida e Mago)`
+              : cls.spellcasting.uses_spellbook
+                ? `Escolha ${cls.spellcasting.prepared_count} magia(s) do grimório`
+                : `Escolha ${cls.spellcasting.prepared_count} magia(s) (${leveledLabel})`
           }
           spells={visibleSpells(
             cls.spellcasting.uses_spellbook
-              ? level1SpellsForClass(cls.spellcasting).filter((spell) =>
+              ? spellbookPool.filter((spell) =>
                   state.spellbook_spell_ids.includes(spell.spell_id),
                 )
-              : level1SpellsForClass(cls.spellcasting),
+              : preparedPool,
             state.prepared_spell_ids,
             spellIdsTakenElsewhere(state, {
               prepared: true,
@@ -184,6 +214,31 @@ export function ChoicesSpellsTab({
           onSpellInfo={onSpellInfo}
         />
       ) : null}
+
+      {progressionFeatSpellSlots.map((slot) => {
+        const feat = data.progression_feats.find(
+          (entry) => entry.id === slot.feat_id,
+        );
+        if (!feat?.spellcasting) return null;
+
+        return (
+          <FeatSpellPicker
+            key={slot.at_level}
+            title={`Magias do feat (nível ${slot.at_level})`}
+            featLabel={feat.name}
+            spellcasting={feat.spellcasting}
+            traitOptions={progressionTraitOptionsForSlot(state, slot.at_level)}
+            originFeatChoices={feat.origin_feat_choices}
+            source="progression"
+            selectionKeyPrefix={progressionFeatSpellKeyPrefix(slot.at_level)}
+            state={state}
+            onChange={onChange}
+            filter={featSpellFilter}
+            onFilterChange={onFeatSpellFilterChange}
+            onSpellInfo={onSpellInfo}
+          />
+        );
+      })}
     </div>
   );
 }

@@ -6,7 +6,7 @@ import {
   toggleClassSkill,
   toggleExpertiseSkill,
 } from "@/features/character-builder/hooks/useCharacterBuilder";
-import { eligibleSkillsForExpertiseGroup } from "@/features/character-builder/domain/expertise/class-expertise";
+import { eligibleSkillsForExpertiseGroup, formatExpertiseGroupLabel } from "@/features/character-builder/domain/expertise/class-expertise";
 import {
   skillIdsGrantedOutsideClass,
   visibleWhenTaken,
@@ -26,7 +26,7 @@ export function ChoicesSkillsTab({
   const skillGroups = cls.skill_choices;
   const maxSkills = skillGroups.reduce((s, g) => s + g.choice_count, 0);
   const allExpertiseSelected = cls.expertise_choices.flatMap((group) =>
-    getExpertiseSelectionsForTrait(state, group.trait_id),
+    getExpertiseSelectionsForTrait(state, group),
   );
   const classToolIds = state.class_tool_selections
     .map((tool) => tool.tool_id)
@@ -69,13 +69,14 @@ export function ChoicesSkillsTab({
       ) : null}
 
       {cls.expertise_choices.map((group) => {
-        const selected = getExpertiseSelectionsForTrait(state, group.trait_id);
+        const selected = getExpertiseSelectionsForTrait(state, group);
         const eligible = eligibleSkillsForExpertiseGroup(data, state, group);
+        const groupKey = `${group.trait_id}:${group.level_required}`;
 
         return (
-          <section key={group.trait_id}>
+          <section key={groupKey}>
             <p className="text-xs font-medium text-foreground">
-              Expertise — {group.trait_name}
+              Expertise — {formatExpertiseGroupLabel(group)}
             </p>
             <p className="text-xs text-muted">
               Escolha {group.choice_count} perícia(s) proficiente(s) —{" "}
@@ -110,7 +111,7 @@ export function ChoicesSkillsTab({
                       onChange(
                         toggleExpertiseSkill(
                           state,
-                          group.trait_id,
+                          group,
                           skill.skill_id,
                           group.choice_count,
                         ),

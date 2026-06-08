@@ -1,17 +1,19 @@
 import { ApiError } from "@/lib/api/errors";
 import {
+  formatExpertiseGroupLabel,
   isExpertiseTrait,
   parseExpertiseChoiceCount,
   parseExpertisePool,
 } from "@/features/character-builder/domain/expertise/class-expertise";
 import type { BuilderExpertiseGroup } from "@/features/character-builder/types/builder.types";
 import type { BuilderAdminClient } from "./types";
-import { BUILDER_CLASS_LEVEL } from "./types";
+import { normalizeBuilderClassLevel } from "./types";
 
 function mapExpertiseTraitLinks(
   traitLinks: {
     class_id?: number;
     trait_id: number;
+    level_required: number;
     traits: { id: number; name: string; description: string | null } | { id: number; name: string; description: string | null }[] | null;
   }[],
   traitOptions: {
@@ -56,6 +58,7 @@ function mapExpertiseTraitLinks(
 
     groups.push({
       trait_id: trait.id,
+      level_required: link.level_required,
       trait_name: trait.name,
       choice_count: parseExpertiseChoiceCount(trait.name, trait.description),
       pool: parseExpertisePool(trait.name, trait.description, fixed_skills.map((s) => s.skill_id)),
@@ -64,18 +67,27 @@ function mapExpertiseTraitLinks(
     });
   }
 
-  return groups.sort((a, b) => a.trait_name.localeCompare(b.trait_name, "pt-BR"));
+  return groups.sort(
+    (a, b) =>
+      a.level_required - b.level_required ||
+      formatExpertiseGroupLabel(a).localeCompare(
+        formatExpertiseGroupLabel(b),
+        "pt-BR",
+      ),
+  );
 }
 
 export async function fetchClassExpertiseChoices(
   admin: BuilderAdminClient,
   classId: number,
+  classLevel: number,
 ): Promise<BuilderExpertiseGroup[]> {
+  const level = normalizeBuilderClassLevel(classLevel);
   const { data: traitLinks, error } = await admin
     .from("class_traits")
     .select("trait_id, level_required, traits(id, name, description)")
     .eq("class_id", classId)
-    .lte("level_required", BUILDER_CLASS_LEVEL);
+    .lte("level_required", level);
 
   if (error) throw new ApiError(error.message, 400);
 
@@ -115,11 +127,13 @@ export async function fetchClassExpertiseChoices(
 
 export async function fetchAllClassExpertiseChoices(
   admin: BuilderAdminClient,
+  classLevel: number,
 ): Promise<Map<number, BuilderExpertiseGroup[]>> {
+  const level = normalizeBuilderClassLevel(classLevel);
   const { data: traitLinks, error } = await admin
     .from("class_traits")
-    .select("class_id, trait_id, traits(id, name, description)")
-    .lte("level_required", BUILDER_CLASS_LEVEL);
+    .select("class_id, trait_id, level_required, traits(id, name, description)")
+    .lte("level_required", level);
 
   if (error) throw new ApiError(error.message, 400);
 

@@ -19,6 +19,7 @@ import type {
 } from "@/features/character-builder/types/builder.types";
 import { ChoicesFeatsTab } from "./choices/ChoicesFeatsTab";
 import { ChoicesGearTab } from "./choices/ChoicesGearTab";
+import { ChoicesOptionalTab } from "./choices/ChoicesOptionalTab";
 import { ChoicesSkillsTab } from "./choices/ChoicesSkillsTab";
 import { ChoicesSpellsTab } from "./choices/ChoicesSpellsTab";
 import { ChoicesTraitsTab } from "./choices/ChoicesTraitsTab";
@@ -46,7 +47,14 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
     (entry) => entry.id === state.human_origin_feat_id,
   );
 
-  const tabs = useChoiceTabs({ cls, species, background, humanFeat, state });
+  const tabs = useChoiceTabs({
+    cls,
+    species,
+    background,
+    humanFeat,
+    progressionFeats: data.progression_feats,
+    state,
+  });
   const resolvedTab = tabs.some((t) => t.id === activeTab)
     ? activeTab
     : (tabs[0]?.id ?? "skills");
@@ -102,6 +110,16 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
               state={state}
               onChange={onChange}
               cls={cls}
+            />
+          ) : null}
+
+          {resolvedTab === "optional" ? (
+            <ChoicesOptionalTab
+              data={data}
+              state={state}
+              onChange={onChange}
+              cls={cls}
+              onOptionInfo={openTraitOptionInfo}
             />
           ) : null}
 

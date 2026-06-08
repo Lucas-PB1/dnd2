@@ -8,6 +8,7 @@ import type {
 } from "@/features/character-builder/types/builder.types";
 import type { BuilderAdminClient } from "./types";
 import { fetchAllClassExpertiseChoices, fetchClassExpertiseChoices } from "./fetch-class-expertise";
+import { fetchClassOptionalFeatures } from "./fetch-optional-features";
 import {
   fetchAllClassSpellcasting,
   fetchClassSpellcasting,
@@ -303,6 +304,8 @@ async function fetchAllClassSubclasses(
 export async function fetchClassById(
   admin: BuilderAdminClient,
   classId: number,
+  classLevel: number,
+  subclassId: number | null = null,
 ): Promise<BuilderClassEntry | null> {
   const { data: cls, error } = await admin
     .from("classes")
@@ -346,11 +349,22 @@ export async function fetchClassById(
   if (toolOptionsError) throw new ApiError(toolOptionsError.message, 400);
 
   const [spellcasting, expertise_choices, features, subclasses] = await Promise.all([
-    fetchClassSpellcasting(admin, classId, cls.name),
-    fetchClassExpertiseChoices(admin, classId),
+    fetchClassSpellcasting(admin, classId, cls.name, classLevel),
+    fetchClassExpertiseChoices(admin, classId, classLevel),
     fetchClassFeatures(admin, classId),
     fetchClassSubclasses(admin, classId),
   ]);
+
+  const selectedSubclass = subclassId
+    ? subclasses.find((entry) => entry.id === subclassId)
+    : null;
+  const optional_feature_groups = await fetchClassOptionalFeatures(
+    admin,
+    classId,
+    classLevel,
+    subclassId,
+    selectedSubclass?.name ?? null,
+  );
 
   return {
     id: cls.id,
@@ -361,6 +375,7 @@ export async function fetchClassById(
     tool_choices: mapToolChoiceGroups(toolOptions ?? []),
     spellcasting,
     expertise_choices,
+    optional_feature_groups,
     features,
     subclasses,
   };
@@ -392,7 +407,10 @@ async function fetchAllClassSkillChoiceGroups(
   return groupsByClass;
 }
 
-export async function fetchClassesSummary(admin: BuilderAdminClient) {
+export async function fetchClassesSummary(
+  admin: BuilderAdminClient,
+  classLevel: number,
+) {
   const [
     { data: classes, error },
     { data: proficiencies, error: profError },
@@ -407,8 +425,8 @@ export async function fetchClassesSummary(admin: BuilderAdminClient) {
       .from("v_class_proficiency_details")
       .select("class_id, proficiency_type, name")
       .eq("requires_choice", false),
-    fetchAllClassExpertiseChoices(admin),
-    fetchAllClassSpellcasting(admin),
+    fetchAllClassExpertiseChoices(admin, classLevel),
+    fetchAllClassSpellcasting(admin, classLevel),
     fetchAllClassFeatures(admin),
     fetchAllClassSubclasses(admin),
     fetchAllClassSkillChoiceGroups(admin),
@@ -428,6 +446,7 @@ export async function fetchClassesSummary(admin: BuilderAdminClient) {
       tool_choices: [] as BuilderToolChoiceGroup[],
       spellcasting: spellcastingByClass.get(cls.id) ?? null,
       expertise_choices: expertiseByClass.get(cls.id) ?? [],
+      optional_feature_groups: [],
       features: featuresByClass.get(cls.id) ?? [],
       subclasses: subclassesByClass.get(cls.id) ?? [],
     } satisfies BuilderClassEntry;

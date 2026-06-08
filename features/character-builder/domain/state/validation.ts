@@ -1,5 +1,12 @@
 import { isBaseAbilitiesComplete, parseSizeOptions } from "@/features/character-builder/domain/abilities/abilities";
 import { validateExpertiseSelections } from "@/features/character-builder/domain/expertise/class-expertise";
+import { validateOptionalFeatureSelections } from "@/features/character-builder/domain/optional-features";
+import {
+  progressionFeatLevelsForClass,
+  validateProgressionFeatSelections,
+} from "@/features/character-builder/domain/progression/feats";
+import { requiresSubclass } from "@/features/character-builder/domain/progression/levels";
+import { applyBackgroundAsi } from "@/features/character-builder/domain/abilities/abilities";
 import { validateSpellSelections } from "@/features/character-builder/domain/spells/class-spells";
 import { validateFeatSpellSelections } from "@/features/character-builder/domain/spells/feat-spells";
 import { mergeOriginFeatTraitOptions } from "@/features/character-builder/domain/origin-feat";
@@ -77,7 +84,17 @@ export function validateBuilderStep(
     }
     case 3: {
       if (!data) return "Carregando catálogo…";
+      if (!Number.isInteger(state.class_level) || state.class_level < 1 || state.class_level > 20) {
+        return "Escolha um nível entre 1 e 20.";
+      }
       if (!state.class_id) return "Escolha uma classe.";
+      const cls = selectedClass(data, state);
+      if (requiresSubclass(state.class_level)) {
+        if (!state.subclass_id) return "Escolha uma subclasse.";
+        if (cls && !cls.subclasses.some((sub) => sub.id === state.subclass_id)) {
+          return "Subclasse inválida para esta classe.";
+        }
+      }
       return null;
     }
     case 4: {
@@ -172,6 +189,23 @@ export function validateBuilderStep(
 
       const expertiseError = validateExpertiseSelections(cls, data, state);
       if (expertiseError) return expertiseError;
+
+      const optionalError = validateOptionalFeatureSelections(cls, state);
+      if (optionalError) return optionalError;
+
+      if (progressionFeatLevelsForClass(state.class_level).length > 0) {
+        const abilities = applyBackgroundAsi(
+          state.ability_assignment,
+          background.ability_options,
+          state.background_asi,
+        );
+        const progressionError = validateProgressionFeatSelections(
+          data,
+          state,
+          abilities,
+        );
+        if (progressionError) return progressionError;
+      }
 
       return null;
     }

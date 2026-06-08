@@ -17,6 +17,7 @@ function stubClass(
     tool_choices: [],
     spellcasting: entry.spellcasting ?? null,
     expertise_choices: entry.expertise_choices ?? [],
+    optional_feature_groups: [],
     features: entry.features ?? [],
     subclasses: entry.subclasses ?? [],
   };
@@ -86,6 +87,7 @@ export function mergeBuilderData(
       a.name.localeCompare(b.name, "pt-BR"),
     ),
     origin_feats: details?.origin_feats ?? [],
+    progression_feats: details?.progression_feats ?? [],
     tools_by_category: details?.tools_by_category ?? {},
     skills: details?.skills ?? [],
     details_loaded: details?.details_loaded ?? false,

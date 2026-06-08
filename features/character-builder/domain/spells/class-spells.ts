@@ -4,8 +4,10 @@ import type {
   CharacterBuilderState,
 } from "@/features/character-builder/types/builder.types";
 
-/** Magias de nível 1 iniciais no grimório do Mago (PHB 2024). */
-export const WIZARD_SPELLBOOK_LEVEL1_COUNT = 6;
+export {
+  wizardSpellbookCount,
+  WIZARD_SPELLBOOK_LEVEL1_COUNT,
+} from "@/features/character-builder/domain/progression/spell-progression";
 
 export const BUILDER_SPELL_LEVEL = 1;
 
@@ -162,7 +164,45 @@ export function cantripsForClass(
 export function level1SpellsForClass(
   spellcasting: BuilderClassSpellcasting,
 ): BuilderClassSpellcasting["spells"] {
-  return spellcasting.spells.filter((spell) => spell.level === 1);
+  return leveledSpellsForClass(spellcasting, 1);
+}
+
+export const MAGICAL_SECRETS_UNLOCK_LEVEL = 10;
+
+export const MAGICAL_SECRETS_SPELL_LISTS = [
+  "Bard",
+  "Cleric",
+  "Druid",
+  "Wizard",
+] as const;
+
+export function bardUsesMagicalSecrets(
+  className: string,
+  classLevel: number,
+): boolean {
+  return className === "Bard" && classLevel >= MAGICAL_SECRETS_UNLOCK_LEVEL;
+}
+
+export function leveledSpellsForClass(
+  spellcasting: BuilderClassSpellcasting,
+  maxLevel?: number,
+): BuilderClassSpellcasting["spells"] {
+  const cap = maxLevel ?? spellcasting.max_spell_level ?? 1;
+  const source = spellcasting.prepared_spell_pool ?? spellcasting.spells;
+  return source.filter(
+    (spell) => spell.level >= 1 && spell.level <= cap,
+  );
+}
+
+export function preparedSpellPoolForClass(
+  spellcasting: BuilderClassSpellcasting,
+  maxLevel?: number,
+): BuilderClassSpellcasting["spells"] {
+  return leveledSpellsForClass(spellcasting, maxLevel);
+}
+
+function spellLevelLabel(maxLevel: number): string {
+  return maxLevel <= 1 ? "nível 1" : `nível 1–${maxLevel}`;
 }
 
 export function validateSpellSelections(
@@ -173,9 +213,13 @@ export function validateSpellSelections(
     return null;
   }
 
+  const maxLevel = spellcasting.max_spell_level ?? 1;
   const cantripPool = new Set(cantripsForClass(spellcasting).map((s) => s.spell_id));
-  const level1Pool = new Set(
-    level1SpellsForClass(spellcasting).map((s) => s.spell_id),
+  const classLeveledPool = new Set(
+    leveledSpellsForClass(spellcasting, maxLevel).map((s) => s.spell_id),
+  );
+  const preparedPool = new Set(
+    preparedSpellPoolForClass(spellcasting, maxLevel).map((s) => s.spell_id),
   );
 
   if (state.cantrip_spell_ids.length !== spellcasting.cantrip_count) {
@@ -190,11 +234,11 @@ export function validateSpellSelections(
 
   if (spellcasting.uses_spellbook) {
     if (state.spellbook_spell_ids.length !== spellcasting.spellbook_count) {
-      return `Adicione ${spellcasting.spellbook_count} magias de nível 1 ao grimório.`;
+      return `Adicione ${spellcasting.spellbook_count} magia(s) (${spellLevelLabel(maxLevel)}) ao grimório.`;
     }
     for (const id of state.spellbook_spell_ids) {
-      if (!level1Pool.has(id)) {
-        return "Magia de grimório inválida para a lista da classe.";
+      if (!classLeveledPool.has(id)) {
+        return `Magia de grimório inválida (máx. ${spellLevelLabel(maxLevel)}).`;
       }
     }
   } else if (state.spellbook_spell_ids.length > 0) {
@@ -205,15 +249,17 @@ export function validateSpellSelections(
     return `Selecione ${spellcasting.prepared_count} magia(s) preparada(s).`;
   }
 
-  const preparedPool = spellcasting.uses_spellbook
+  const preparedAllowed = spellcasting.uses_spellbook
     ? new Set(state.spellbook_spell_ids)
-    : level1Pool;
+    : preparedPool;
 
   for (const id of state.prepared_spell_ids) {
-    if (!preparedPool.has(id)) {
+    if (!preparedAllowed.has(id)) {
       return spellcasting.uses_spellbook
         ? "Magias preparadas devem estar no grimório."
-        : "Magia preparada inválida para a lista da classe.";
+        : spellcasting.uses_magical_secrets
+          ? `Magia preparada inválida para Magical Secrets (máx. ${spellLevelLabel(maxLevel)}).`
+          : `Magia preparada inválida (máx. ${spellLevelLabel(maxLevel)}).`;
     }
   }
 

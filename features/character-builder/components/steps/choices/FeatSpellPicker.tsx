@@ -23,6 +23,7 @@ type FeatSpellPickerProps = {
   originFeatChoices: BuilderOriginFeatChoice[];
   lockedSpellListName?: string | null;
   source: FeatSpellSource;
+  selectionKeyPrefix?: string;
   state: CharacterBuilderState;
   onChange: (next: CharacterBuilderState) => void;
   filter: string;
@@ -38,6 +39,7 @@ export function FeatSpellPicker({
   originFeatChoices,
   lockedSpellListName,
   source,
+  selectionKeyPrefix,
   state,
   onChange,
   filter,
@@ -82,6 +84,7 @@ export function FeatSpellPicker({
           source,
           group.trait_id,
           group.choice_group,
+          selectionKeyPrefix,
         );
         const selectedIds = selected.map((entry) => entry.spell_id);
         const groupTitle =
@@ -92,12 +95,16 @@ export function FeatSpellPicker({
               : `Magias de talento (${group.choice_group})`;
 
         const takenSpellIds = spellIdsTakenElsewhere(state, {
-          featSources: [source],
+          featSources:
+            source === "progression"
+              ? ["background", "human"]
+              : [source],
+          featSpellPrefix: selectionKeyPrefix,
         });
 
         return (
           <SpellPickerSection
-            key={`${source}-${group.choice_group}`}
+            key={`${source}-${selectionKeyPrefix ?? ""}-${group.choice_group}`}
             title={groupTitle}
             hint={
               group.notes ??
@@ -117,6 +124,7 @@ export function FeatSpellPicker({
                   choice_count: group.choice_count,
                   spell_level: group.spell_level,
                   spell_id: spellId,
+                  selectionKeyPrefix,
                 }),
               )
             }

@@ -16,7 +16,9 @@ import {
   mergeOriginFeatTraitOptions,
 } from "@/features/character-builder/domain/origin-feat";
 import { visibleHumanOriginFeats } from "@/features/character-builder/domain/selection";
+import { progressionFeatLevelsForClass } from "@/features/character-builder/domain/progression/feats";
 import type { ChoicesTabProps } from "./types";
+import { ChoicesProgressionFeatsSection } from "./ChoicesProgressionFeatsSection";
 import { TraitOptionGroupSection } from "./TraitOptionGroupSection";
 
 type ChoicesFeatsTabProps = ChoicesTabProps & {
@@ -46,6 +48,15 @@ export function ChoicesFeatsTab({
 
   return (
     <div className="space-y-4">
+      {progressionFeatLevelsForClass(state.class_level).length > 0 ? (
+        <ChoicesProgressionFeatsSection
+          data={data}
+          state={state}
+          onChange={onChange}
+          onOptionInfo={onOptionInfo}
+        />
+      ) : null}
+
       {species.name === "Human" ? (
         <section>
           <p className="text-xs text-muted">

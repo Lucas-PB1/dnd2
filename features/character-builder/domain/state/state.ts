@@ -8,6 +8,10 @@ import {
   isRollSetValid,
   rollAbilitySet,
 } from "@/features/character-builder/domain/abilities/ability-generation";
+import {
+  emptyProgressionFeatSlots,
+  syncProgressionFeatSlots,
+} from "@/features/character-builder/domain/progression/feats";
 import type {
   AbilityMethod,
   CharacterBuilderState,
@@ -25,6 +29,8 @@ export function createInitialBuilderState(): CharacterBuilderState {
     background_id: null,
     background_asi: { mode: "split", plus2: null, plus1: null },
     class_id: null,
+    class_level: 1,
+    subclass_id: null,
     class_skill_ids: [],
     class_tool_selections: [],
     background_tool_selections: [],
@@ -38,6 +44,9 @@ export function createInitialBuilderState(): CharacterBuilderState {
     prepared_spell_ids: [],
     feat_spell_selections: [],
     expertise_by_trait: {},
+    class_trait_option_selections: [],
+    progression_feat_slots: emptyProgressionFeatSlots(1),
+    progression_feat_trait_options: [],
     size: null,
     name: "",
   };
@@ -70,6 +79,8 @@ function clearChoiceFields(
     prepared_spell_ids: [],
     feat_spell_selections: [],
     expertise_by_trait: {},
+    class_trait_option_selections: [],
+    progression_feat_trait_options: [],
   };
 }
 
@@ -77,7 +88,7 @@ function clearClassAndChoices(
   state: CharacterBuilderState,
   options: { includeOriginFeatOptions?: boolean } = {},
 ): CharacterBuilderState {
-  return clearChoiceFields({ ...state, class_id: null }, options);
+  return clearChoiceFields({ ...state, class_id: null, subclass_id: null }, options);
 }
 
 export function resetDependentState(
@@ -96,7 +107,11 @@ export function resetDependentState(
   }
 
   if (fromStep <= 3) {
-    return clearChoiceFields(state);
+    const cleared = clearChoiceFields(state);
+    return {
+      ...cleared,
+      progression_feat_slots: syncProgressionFeatSlots(cleared),
+    };
   }
 
   return state;

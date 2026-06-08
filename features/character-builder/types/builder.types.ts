@@ -83,16 +83,56 @@ export type BuilderClassSpellcasting = {
   prepared_count: number;
   spellbook_count: number;
   uses_spellbook: boolean;
+  /** Maior nível de magia selecionável (slots de classe). */
+  max_spell_level: number;
   spells: BuilderSpellOption[];
+  /** Pool expandido de preparadas (Magical Secrets @ 10). */
+  prepared_spell_pool?: BuilderSpellOption[];
+  uses_magical_secrets?: boolean;
 };
 
 export type BuilderExpertiseGroup = {
   trait_id: number;
+  level_required: number;
   trait_name: string;
   choice_count: number;
   pool: "proficient" | "class_skills" | "fixed";
   fixed_skills: BuilderSkillOption[];
   notes: string | null;
+};
+
+export type BuilderOptionalFeatureGroup = {
+  group_key: string;
+  trait_id: number;
+  trait_name: string;
+  trait_description: string | null;
+  option_group: string;
+  choice_count: number;
+  level_required: number;
+  tab_label: string;
+  notes: string | null;
+  options: BuilderTraitOption[];
+};
+
+export type ProgressionFeatLevel = 4 | 8 | 12 | 16 | 19;
+
+export type ProgressionFeatChoiceKind = "asi" | "feat";
+
+export type ProgressionFeatSlotChoice = {
+  at_level: ProgressionFeatLevel;
+  kind: ProgressionFeatChoiceKind | null;
+  feat_id: number | null;
+};
+
+export type BuilderProgressionFeat = {
+  id: number;
+  name: string;
+  description: string | null;
+  category: string;
+  prerequisite_text: string | null;
+  is_repeatable: boolean;
+  origin_feat_choices: BuilderOriginFeatChoice[];
+  spellcasting: BuilderFeatSpellcasting | null;
 };
 
 export type BuilderClassFeature = {
@@ -120,6 +160,7 @@ export type BuilderClassEntry = {
   tool_choices: BuilderToolChoiceGroup[];
   spellcasting: BuilderClassSpellcasting | null;
   expertise_choices: BuilderExpertiseGroup[];
+  optional_feature_groups: BuilderOptionalFeatureGroup[];
   features: BuilderClassFeature[];
   subclasses: BuilderSubclassSummary[];
 };
@@ -188,7 +229,7 @@ export type BuilderFeatSpellcasting = {
   spell_list_ids_by_name: Record<string, number>;
 };
 
-export type FeatSpellSource = "background" | "human";
+export type FeatSpellSource = "background" | "human" | "progression";
 
 export type FeatSpellSelection = {
   source: FeatSpellSource;
@@ -269,6 +310,7 @@ export type CharacterBuilderData = {
   species: BuilderSpeciesEntry[];
   backgrounds: BuilderBackgroundEntry[];
   origin_feats: BuilderOriginFeat[];
+  progression_feats: BuilderProgressionFeat[];
   tools_by_category: Record<string, BuilderToolOption[]>;
   skills: BuilderSkillOption[];
   details_loaded: boolean;
@@ -314,6 +356,9 @@ export type CharacterBuilderState = {
   background_id: number | null;
   background_asi: BackgroundAsiSelection;
   class_id: number | null;
+  /** Nível da classe principal (1–20). */
+  class_level: number;
+  subclass_id: number | null;
   class_skill_ids: number[];
   class_tool_selections: ToolProficiencySelection[];
   background_tool_selections: ToolProficiencySelection[];
@@ -326,8 +371,14 @@ export type CharacterBuilderState = {
   feat_spell_selections: FeatSpellSelection[];
   spellbook_spell_ids: number[];
   prepared_spell_ids: number[];
-  /** trait_id → skill_ids com expertise */
-  expertise_by_trait: Record<number, number[]>;
+  /** trait_id:level_required → skill_ids com expertise */
+  expertise_by_trait: Record<string, number[]>;
+  /** Escolhas de traços opcionais de classe/subclasse (Fighting Style, manobras…). */
+  class_trait_option_selections: TraitOptionSelection[];
+  /** Feats de progressão nos níveis 4/8/12/16/19. */
+  progression_feat_slots: ProgressionFeatSlotChoice[];
+  /** Escolhas internas dos feats de progressão (ASI, perícias do feat…). */
+  progression_feat_trait_options: TraitOptionSelection[];
   size: string | null;
   name: string;
 };
@@ -335,6 +386,8 @@ export type CharacterBuilderState = {
 export type CreateCharacterBuilderPayload = {
   name: string;
   class_id: number;
+  class_level: number;
+  subclass_id: number | null;
   species_id: number;
   background_id: number;
   size?: string;
@@ -368,7 +421,7 @@ export const BUILDER_STEPS = [
   { id: "abilities", title: "Atributos", subtitle: "Método e valores base" },
   { id: "species", title: "Espécie", subtitle: "Raça e tamanho" },
   { id: "background", title: "Antecedente", subtitle: "História e bônus" },
-  { id: "class", title: "Classe", subtitle: "Nível 1" },
+  { id: "class", title: "Classe", subtitle: "Classe e nível inicial" },
   { id: "choices", title: "Escolhas", subtitle: "Perícias, traços e equipamento" },
   { id: "details", title: "Detalhes", subtitle: "Nome e revisão" },
 ] as const;

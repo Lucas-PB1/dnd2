@@ -1,9 +1,16 @@
 import { ApiError } from "@/lib/api/errors";
 import {
   applyBackgroundAsi,
-  computeLevel1Hp,
+  abilityModifier,
   isBaseAbilitiesComplete,
 } from "@/features/character-builder/domain/abilities/abilities";
+import { computeMaxHp } from "@/features/character-builder/domain/progression/hp";
+import { requiresSubclass } from "@/features/character-builder/domain/progression/levels";
+import {
+  buildProgressionFeatsPayload,
+  validateProgressionFeatSelections,
+} from "@/features/character-builder/domain/progression/feats";
+import { validateOptionalFeatureSelections } from "@/features/character-builder/domain/optional-features";
 import type {
   AbilityKey,
   CharacterBuilderData,
@@ -40,6 +47,17 @@ export function buildRpcPayloadFromBuilderState(
 
   if (!cls || !species || !background) {
     throw new ApiError("Seleções incompletas.", 400);
+  }
+
+  if (requiresSubclass(state.class_level)) {
+    if (!state.subclass_id) {
+      throw new ApiError("Escolha uma subclasse.", 400);
+    }
+    if (!cls.subclasses.some((sub) => sub.id === state.subclass_id)) {
+      throw new ApiError("Subclasse inválida para esta classe.", 400);
+    }
+  } else if (state.subclass_id !== null) {
+    throw new ApiError("Subclasse só é permitida a partir do nível 3.", 400);
   }
 
   const name = state.name.trim();
@@ -160,6 +178,9 @@ export function buildRpcPayloadFromBuilderState(
     }
   }
 
+  trait_options.push(...state.class_trait_option_selections);
+  trait_options.push(...state.progression_feat_trait_options);
+
   const feats: CreateCharacterBuilderPayload["feats"] = [];
   if (state.human_origin_feat_id) {
     feats.push({
@@ -168,6 +189,7 @@ export function buildRpcPayloadFromBuilderState(
       source_id: species.id,
     });
   }
+  feats.push(...buildProgressionFeatsPayload(data, state));
 
   const equipment = background.equipment_options.find(
     (opt) => opt.option_key === state.equipment_option_key,
@@ -233,6 +255,16 @@ export function buildRpcPayloadFromBuilderState(
     throw new ApiError(expertiseError, 400);
   }
 
+  const optionalError = validateOptionalFeatureSelections(cls, state);
+  if (optionalError) {
+    throw new ApiError(optionalError, 400);
+  }
+
+  const progressionError = validateProgressionFeatSelections(data, state, abilities);
+  if (progressionError) {
+    throw new ApiError(progressionError, 400);
+  }
+
   const skillsPayload = buildSkillsPayloadWithExpertise(data, state);
 
   const spellError = validateSpellSelections(cls.spellcasting, state);
@@ -251,11 +283,13 @@ export function buildRpcPayloadFromBuilderState(
   const trait_spell_choices = buildFeatSpellsRpcPayload(data, state);
 
   const constitution = abilities.CON;
-  const max_hp = computeLevel1Hp(cls.hit_die, constitution);
+  const max_hp = computeMaxHp(cls.hit_die, abilityModifier(constitution), state.class_level);
 
   return {
     name,
     class_id: cls.id,
+    class_level: state.class_level,
+    subclass_id: state.subclass_id,
     species_id: species.id,
     background_id: background.id,
     size,
@@ -294,7 +328,11 @@ export function toCreateCharacterRpcBody(
       WIS: abilities.WIS,
       CHA: abilities.CHA,
     },
-    classes: [{ class_id: payload.class_id, class_level: 1 }],
+    classes: [{
+      class_id: payload.class_id,
+      class_level: payload.class_level,
+      subclass_id: payload.subclass_id,
+    }],
     skills: payload._skillsPayload ?? payload.class_skill_ids.map((skill_id) => ({
       skill_id,
       is_proficient: true,

@@ -2,6 +2,7 @@ import {
   applyBackgroundAsi,
   isBaseAbilitiesComplete,
 } from "@/features/character-builder/domain/abilities/abilities";
+import { applyProgressionAbilityDeltas } from "@/features/character-builder/domain/progression/asi";
 import { ABILITY_KEYS } from "@/features/character-builder/domain/utils";
 import type {
   AbilityKey,
@@ -73,6 +74,7 @@ export function computePreviewAbilities(
 ): Record<AbilityKey, number> | null {
   const background = data ? selectedBackground(data, state) : null;
   if (
+    !data ||
     !background ||
     !isBaseAbilitiesComplete(
       state.ability_method,
@@ -83,10 +85,14 @@ export function computePreviewAbilities(
     return null;
   }
 
-  return applyBackgroundAsi(
-    state.ability_assignment,
-    background.ability_options,
-    state.background_asi,
+  return applyProgressionAbilityDeltas(
+    applyBackgroundAsi(
+      state.ability_assignment,
+      background.ability_options,
+      state.background_asi,
+    ),
+    data,
+    state,
   );
 }
 

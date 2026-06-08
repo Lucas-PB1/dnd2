@@ -13,6 +13,8 @@ import {
 } from "@/features/character-builder/types/builder.types";
 import { computePreviewAbilities } from "@/features/character-builder/hooks/useCharacterBuilder";
 import { abilityModifier } from "@/features/character-builder/domain/abilities/abilities";
+import { computeMaxHp } from "@/features/character-builder/domain/progression/hp";
+import { proficiencyBonusForLevel } from "@/features/character-builder/domain/progression/levels";
 
 type StepDetailsProps = {
   data: CharacterBuilderData;
@@ -30,6 +32,11 @@ export function StepDetails({ data, state, onChange }: StepDetailsProps) {
   const species = data.species.find((s) => s.id === state.species_id);
   const background = data.backgrounds.find((b) => b.id === state.background_id);
   const abilities = computePreviewAbilities(data, state);
+  const profBonus = proficiencyBonusForLevel(state.class_level);
+  const maxHp =
+    cls && abilities
+      ? computeMaxHp(cls.hit_die, abilityModifier(abilities.CON), state.class_level)
+      : null;
 
   return (
     <BuilderStepFrame
@@ -53,8 +60,24 @@ export function StepDetails({ data, state, onChange }: StepDetailsProps) {
         <dl className="grid min-w-0 gap-2 rounded-lg border border-border bg-surface/40 p-4 text-sm shadow-[inset_0_1px_0_rgb(255_255_255/0.035)] sm:grid-cols-2">
           <div>
             <dt className="text-muted">Classe</dt>
-            <dd className="font-medium text-foreground">{cls?.name ?? "—"}</dd>
+            <dd className="font-medium text-foreground">
+              {cls ? `${cls.name} (nível ${state.class_level})` : "—"}
+            </dd>
           </div>
+          {maxHp !== null ? (
+            <div>
+              <dt className="text-muted">PV máx.</dt>
+              <dd className="font-medium text-foreground">{maxHp}</dd>
+            </div>
+          ) : null}
+          {cls ? (
+            <div>
+              <dt className="text-muted">Proficiência</dt>
+              <dd className="font-medium text-foreground">
+                {profBonus >= 0 ? `+${profBonus}` : profBonus}
+              </dd>
+            </div>
+          ) : null}
           <div>
             <dt className="text-muted">Espécie</dt>
             <dd className="font-medium text-foreground">

@@ -10,18 +10,23 @@ import type {
 import { fetchBackgroundById, fetchBackgroundsSummary } from "./fetch-backgrounds";
 import { fetchClassById, fetchClassesSummary } from "./fetch-classes";
 import { fetchOriginFeatsEnriched } from "./fetch-origin-feats";
+import { fetchProgressionFeatsEnriched } from "./fetch-progression-feats";
 import { fetchSpeciesTraitsForSpecies, fetchAllSpeciesTraits } from "./fetch-species";
 import { fetchToolsByCategory } from "./fetch-tools";
 import type { BuilderDetailsRequest } from "./types";
+import { normalizeBuilderClassLevel } from "./types";
 
 export type { BuilderDetailsRequest } from "./types";
 
-export async function fetchCharacterBuilderSummary(): Promise<CharacterBuilderSummary> {
+export async function fetchCharacterBuilderSummary(
+  classLevel = 1,
+): Promise<CharacterBuilderSummary> {
   const admin = createAdminClient();
+  const level = normalizeBuilderClassLevel(classLevel);
 
   const [classes, speciesResult, backgrounds, speciesTraitsById] =
     await Promise.all([
-    fetchClassesSummary(admin),
+    fetchClassesSummary(admin, level),
     admin
       .from("species")
       .select("id, name, description, creature_type, size_options, base_speed")
@@ -65,6 +70,7 @@ export async function fetchCharacterBuilderSummary(): Promise<CharacterBuilderSu
         skill_choices: skill_choices ?? [],
         spellcasting: spellcasting ?? null,
         expertise_choices: expertise_choices ?? [],
+        optional_feature_groups: [],
         features: features ?? [],
         subclasses: subclasses ?? [],
       }),
@@ -78,7 +84,7 @@ export async function fetchCharacterBuilderDetails(
   request: BuilderDetailsRequest,
 ): Promise<Pick<
   CharacterBuilderData,
-  "classes" | "species" | "backgrounds" | "origin_feats" | "tools_by_category" | "skills" | "details_loaded"
+  "classes" | "species" | "backgrounds" | "origin_feats" | "progression_feats" | "tools_by_category" | "skills" | "details_loaded"
 >> {
   const admin = createAdminClient();
 
@@ -87,11 +93,12 @@ export async function fetchCharacterBuilderDetails(
     speciesResult,
     background,
     originFeatsResult,
+    progressionFeatsResult,
     tools_by_category,
     skillsResult,
     speciesTraits,
   ] = await Promise.all([
-    fetchClassById(admin, request.class_id),
+    fetchClassById(admin, request.class_id, request.class_level, request.subclass_id ?? null),
     admin
       .from("species")
       .select("id, name, description, creature_type, size_options, base_speed")
@@ -99,6 +106,7 @@ export async function fetchCharacterBuilderDetails(
       .maybeSingle(),
     fetchBackgroundById(admin, request.background_id),
     fetchOriginFeatsEnriched(admin),
+    fetchProgressionFeatsEnriched(admin),
     fetchToolsByCategory(admin),
     admin.from("skills").select("id, name, base_attribute").order("name"),
     fetchSpeciesTraitsForSpecies(admin, request.species_id),
@@ -123,6 +131,7 @@ export async function fetchCharacterBuilderDetails(
     species: [species],
     backgrounds: [background],
     origin_feats: originFeatsResult,
+    progression_feats: progressionFeatsResult,
     tools_by_category,
     skills: (skillsResult.data ?? []).map((skill) => ({
       skill_id: skill.id,
@@ -137,7 +146,7 @@ export async function fetchCharacterBuilderDataForState(
   request: BuilderDetailsRequest,
 ): Promise<CharacterBuilderData> {
   const [summary, details] = await Promise.all([
-    fetchCharacterBuilderSummary(),
+    fetchCharacterBuilderSummary(request.class_level),
     fetchCharacterBuilderDetails(request),
   ]);
   return mergeBuilderData(summary, details);

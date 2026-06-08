@@ -49,6 +49,16 @@ export function parseExpertisePool(
   return "proficient";
 }
 
+export function expertiseGroupKey(traitId: number, levelRequired: number): string {
+  return `${traitId}:${levelRequired}`;
+}
+
+export function formatExpertiseGroupLabel(group: BuilderExpertiseGroup): string {
+  return group.level_required > 1
+    ? `${group.trait_name} (nível ${group.level_required})`
+    : group.trait_name;
+}
+
 export function classRequiresExpertiseSelection(
   expertiseChoices: BuilderExpertiseGroup[] | null | undefined,
 ): boolean {
@@ -123,18 +133,20 @@ export function eligibleSkillsForExpertiseGroup(
 
 export function getExpertiseSelectionsForTrait(
   state: CharacterBuilderState,
-  traitId: number,
+  group: Pick<BuilderExpertiseGroup, "trait_id" | "level_required">,
 ): number[] {
-  return state.expertise_by_trait[traitId] ?? [];
+  const key = expertiseGroupKey(group.trait_id, group.level_required);
+  return state.expertise_by_trait[key] ?? [];
 }
 
 export function toggleExpertiseSkill(
   state: CharacterBuilderState,
-  traitId: number,
+  group: Pick<BuilderExpertiseGroup, "trait_id" | "level_required">,
   skillId: number,
   max: number,
 ): CharacterBuilderState {
-  const current = getExpertiseSelectionsForTrait(state, traitId);
+  const key = expertiseGroupKey(group.trait_id, group.level_required);
+  const current = getExpertiseSelectionsForTrait(state, group);
   const nextForTrait = current.includes(skillId)
     ? current.filter((id) => id !== skillId)
     : current.length >= max
@@ -145,7 +157,7 @@ export function toggleExpertiseSkill(
     ...state,
     expertise_by_trait: {
       ...state.expertise_by_trait,
-      [traitId]: nextForTrait,
+      [key]: nextForTrait,
     },
   };
 }
@@ -159,9 +171,9 @@ export function validateExpertiseSelections(
   if (!groups.length) return null;
 
   for (const group of groups) {
-    const selected = getExpertiseSelectionsForTrait(state, group.trait_id);
+    const selected = getExpertiseSelectionsForTrait(state, group);
     if (selected.length !== group.choice_count) {
-      return `Selecione ${group.choice_count} perícia(s) com expertise: ${group.trait_name}.`;
+      return `Selecione ${group.choice_count} perícia(s) com expertise: ${formatExpertiseGroupLabel(group)}.`;
     }
 
     const eligible = new Set(
@@ -169,7 +181,7 @@ export function validateExpertiseSelections(
     );
     for (const skillId of selected) {
       if (!eligible.has(skillId)) {
-        return `Perícia inválida para expertise (${group.trait_name}).`;
+        return `Perícia inválida para expertise (${formatExpertiseGroupLabel(group)}).`;
       }
     }
   }

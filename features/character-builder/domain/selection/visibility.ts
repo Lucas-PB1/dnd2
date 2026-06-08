@@ -27,6 +27,8 @@ export type SpellSelectionScope = {
   spellbook?: boolean;
   prepared?: boolean;
   featSources?: FeatSpellSource[];
+  /** Magias de feats de progressão no mesmo slot não contam como "tomadas". */
+  featSpellPrefix?: string;
 };
 
 export function spellIdsTakenElsewhere(
@@ -47,9 +49,15 @@ export function spellIdsTakenElsewhere(
 
   const excludedFeatSources = new Set(scope.featSources ?? []);
   for (const entry of state.feat_spell_selections) {
-    if (!excludedFeatSources.has(entry.source)) {
-      ids.push(entry.spell_id);
+    if (excludedFeatSources.has(entry.source)) continue;
+    if (
+      scope.featSpellPrefix !== undefined &&
+      entry.source === "progression" &&
+      entry.selection_key.startsWith(scope.featSpellPrefix)
+    ) {
+      continue;
     }
+    ids.push(entry.spell_id);
   }
 
   return ids;

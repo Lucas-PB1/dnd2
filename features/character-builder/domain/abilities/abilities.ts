@@ -90,9 +90,7 @@ export function hitDieMax(hitDie: string): number {
   return map[hitDie] ?? 8;
 }
 
-export function computeLevel1Hp(hitDie: string, constitution: number): number {
-  return Math.max(1, hitDieMax(hitDie) + abilityModifier(constitution));
-}
+export { computeLevel1Hp, computeMaxHp } from "@/features/character-builder/domain/progression/hp";
 
 export function parseSizeOptions(sizeOptions: string): string[] {
   return sizeOptions.split(/\s+or\s+/i).map((part) => part.trim()).filter(Boolean);
