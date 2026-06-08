@@ -13,6 +13,7 @@ import type {
 } from "@/features/character/types/builder.types";
 import { ABILITY_KEYS } from "@/features/character/types/builder.types";
 import { CHARACTER_NAME_MIN } from "@/features/character/types/character.types";
+import { mergeOriginFeatTraitOptions } from "@/lib/character/origin-feat";
 
 export function buildRpcPayloadFromBuilderState(
   data: CharacterBuilderData,
@@ -100,8 +101,13 @@ export function buildRpcPayloadFromBuilderState(
 
   const trait_options: TraitOptionSelection[] = [...state.species_trait_options];
 
+  const originFeatOptions = mergeOriginFeatTraitOptions(
+    background,
+    state.origin_feat_trait_options,
+  );
+
   for (const group of background.origin_feat_choices) {
-    const selected = state.origin_feat_trait_options.filter(
+    const selected = originFeatOptions.filter(
       (opt) =>
         opt.trait_id === group.trait_id &&
         opt.option_group === group.option_group,

@@ -47,6 +47,11 @@ import {
   fetchCharacterBuilderSummary,
   mergeBuilderCatalog,
 } from "@/features/character/services/character.service";
+import {
+  applyLockedOriginFeatToState,
+  findLockedOriginFeatSelection,
+  getVisibleOriginFeatChoices,
+} from "@/lib/character/origin-feat";
 
 function formatModifier(score: number): string {
   const mod = abilityModifier(score);
@@ -73,7 +78,11 @@ function StepClass({
           <SelectionCard
             key={cls.id}
             title={cls.name}
-            description={`Dado de vida ${cls.hit_die} · Salvaguardas: ${cls.saving_throws.join(", ") || "—"}`}
+            description={`Dado de vida ${cls.hit_die} · Salvaguardas: ${
+              cls.saving_throws
+                .map((save) => ABILITY_LABELS[save] ?? save)
+                .join(", ") || "—"
+            }`}
             selected={state.class_id === cls.id}
             onSelect={() =>
               onChange(
@@ -335,6 +344,8 @@ function StepChoices({
   const skillGroups = cls.skill_choices;
   const allSkillOptions = skillGroups.flatMap((g) => g.options);
   const maxSkills = skillGroups.reduce((s, g) => s + g.choice_count, 0);
+  const lockedOriginFeat = findLockedOriginFeatSelection(background);
+  const visibleOriginFeatChoices = getVisibleOriginFeatChoices(background);
 
   return (
     <div className="space-y-8">
@@ -524,7 +535,26 @@ function StepChoices({
         </section>
       ) : null}
 
-      {background.origin_feat_choices.map((group) => (
+      {lockedOriginFeat ? (
+        <section>
+          <h2 className="font-serif text-lg font-semibold text-foreground">
+            {background.origin_feat_name}: {lockedOriginFeat.trait_name}
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            Definido pelo antecedente {background.name}.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <ChipToggle
+              label={lockedOriginFeat.option_name}
+              selected
+              disabled
+              onToggle={() => {}}
+            />
+          </div>
+        </section>
+      ) : null}
+
+      {visibleOriginFeatChoices.map((group) => (
         <section key={`${group.trait_id}-${group.option_group}`}>
           <h2 className="font-serif text-lg font-semibold text-foreground">
             {background.origin_feat_name}: {group.trait_name}
@@ -734,6 +764,17 @@ export function CharacterBuilderWizard() {
         : prev,
     );
   }, [state.class_id, state.species_id, state.background_id]);
+
+  useEffect(() => {
+    if (!data?.details_loaded || !state.background_id) return;
+
+    const background = data.backgrounds.find(
+      (entry) => entry.id === state.background_id,
+    );
+    if (!background) return;
+
+    setState((prev) => applyLockedOriginFeatToState(prev, background));
+  }, [data, detailsKey, state.background_id]);
 
   const patchState = useCallback(
     (patch: Partial<CharacterBuilderState> | CharacterBuilderState) => {

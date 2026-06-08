@@ -15,6 +15,7 @@ import {
   toggleIdList,
   toggleTraitOption,
 } from "@/lib/character/builder-utils";
+import { mergeOriginFeatTraitOptions } from "@/lib/character/origin-feat";
 import type {
   AbilityKey,
   AbilityMethod,
@@ -249,8 +250,13 @@ export function validateBuilderStep(
         return "Humanos escolhem um feat de origem (Versátil).";
       }
 
+      const originFeatOptions = mergeOriginFeatTraitOptions(
+        background,
+        state.origin_feat_trait_options,
+      );
+
       for (const group of background.origin_feat_choices) {
-        const count = state.origin_feat_trait_options.filter(
+        const count = originFeatOptions.filter(
           (entry) =>
             entry.trait_id === group.trait_id &&
             entry.option_group === group.option_group,
@@ -290,12 +296,12 @@ export function assignAbilityScore(
 ): CharacterBuilderState {
   const next = { ...state, ability_assignment: { ...state.ability_assignment } };
 
-  if (state.ability_method === "standard" || state.ability_method === "roll") {
-    if (score !== null) {
-      for (const key of ABILITY_KEYS) {
-        if (key !== ability && next.ability_assignment[key] === score) {
-          next.ability_assignment[key] = null;
-        }
+  // Array padrão: cada valor é único — ao reutilizar um número, libera o atributo anterior.
+  // Rolagem: duplicatas são válidas (ex.: dois 13 no mesmo conjunto).
+  if (state.ability_method === "standard" && score !== null) {
+    for (const key of ABILITY_KEYS) {
+      if (key !== ability && next.ability_assignment[key] === score) {
+        next.ability_assignment[key] = null;
       }
     }
   }

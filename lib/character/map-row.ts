@@ -105,6 +105,12 @@ export function mapRpcError(message: string): string {
   if (normalized.includes("row-level security")) {
     return "Não foi possível salvar o personagem (permissão negada). Tente sair e entrar de novo.";
   }
+  if (normalized.includes("proficiency_type_check")) {
+    return "Erro ao salvar proficiências do personagem. Tente novamente.";
+  }
+  if (normalized.includes("group by")) {
+    return "Erro ao finalizar o personagem (slots/recursos). Tente novamente.";
+  }
 
   return message;
 }
