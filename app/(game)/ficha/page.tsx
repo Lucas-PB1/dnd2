@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { listCharactersForUser } from "@/lib/character/server";
-import { FichaListView } from "@/features/character";
+import { CharacterListView } from "@/features/character-sheet";
 
 export const metadata: Metadata = {
   title: "Fichas",
@@ -25,5 +25,5 @@ export default async function FichaPage() {
     characters = [];
   }
 
-  return <FichaListView initialCharacters={characters} />;
+  return <CharacterListView initialCharacters={characters} />;
 }

@@ -9,8 +9,8 @@ import {
   CHARACTER_NAME_MAX,
   CHARACTER_NAME_MIN,
   type CreateCharacterPayload,
-} from "@/features/character/types/character.types";
-import type { CharacterBuilderState } from "@/features/character/types/builder.types";
+} from "@/features/character-sheet/types/character.types";
+import type { CharacterBuilderState } from "@/features/character-builder/types/builder.types";
 
 function isBuilderState(value: unknown): value is CharacterBuilderState {
   return (

@@ -4,10 +4,10 @@ import {
   buildCreateCharacterRpcPayload,
   mapRpcError,
 } from "@/lib/character/map-row";
-import { toCreateCharacterRpcBody, buildRpcPayloadFromBuilderState } from "@/lib/character/build-payload";
-import { fetchCharacterBuilderDataForState } from "@/lib/character/builder-data";
-import type { CreateCharacterPayload } from "@/features/character/types/character.types";
-import type { CharacterBuilderState } from "@/features/character/types/builder.types";
+import { toCreateCharacterRpcBody, buildRpcPayloadFromBuilderState } from "@/features/character-builder/domain/payload";
+import { fetchCharacterBuilderDataForState } from "@/features/character-builder/server";
+import type { CreateCharacterPayload } from "@/features/character-sheet/types/character.types";
+import type { CharacterBuilderState } from "@/features/character-builder/types/builder.types";
 
 type CreateCharacterRpcResult = {
   character_id: number;

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { CharacterBuilderWizard } from "@/features/character";
+import { CharacterBuilderWizard } from "@/features/character-builder";
 
 export const metadata: Metadata = {
   title: "Novo personagem",

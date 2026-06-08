@@ -1,7 +1,7 @@
 import type {
   CharacterClassSummary,
   CharacterSummary,
-} from "@/features/character/types/character.types";
+} from "@/features/character-sheet/types/character.types";
 
 type SpeciesRef = { name: string } | { name: string }[] | null;
 type BackgroundRef = { name: string } | { name: string }[] | null;

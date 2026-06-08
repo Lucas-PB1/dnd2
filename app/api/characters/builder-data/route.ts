@@ -3,7 +3,7 @@ import { ApiError, jsonError, jsonOk } from "@/lib/api/errors";
 import {
   fetchCharacterBuilderDetails,
   fetchCharacterBuilderSummary,
-} from "@/lib/character/builder-data";
+} from "@/features/character-builder/server";
 
 export async function GET(request: Request) {
   try {

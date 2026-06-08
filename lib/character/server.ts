@@ -5,7 +5,7 @@ import {
   mapCharacterRow,
   type CharacterListRow,
 } from "@/lib/character/map-row";
-import type { CharacterSummary } from "@/features/character/types/character.types";
+import type { CharacterSummary } from "@/features/character-sheet/types/character.types";
 
 export async function listCharactersForUser(
   userId: string,

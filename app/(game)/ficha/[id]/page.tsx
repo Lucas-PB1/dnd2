@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCharacterForUser } from "@/lib/character/server";
-import { FichaDetailView } from "@/features/character";
+import { CharacterSheetView } from "@/features/character-sheet";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -50,7 +50,7 @@ export default async function FichaDetailPage({ params }: PageProps) {
   }
 
   return (
-    <FichaDetailView
+    <CharacterSheetView
       character={{
         ...character,
         is_owner: true,
