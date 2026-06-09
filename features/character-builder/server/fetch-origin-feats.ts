@@ -6,8 +6,38 @@ import type {
   BuilderOriginFeatChoice,
   BuilderSpellOption,
   BuilderTraitOption,
+  BuilderTraitOptionModifier,
 } from "@/features/character-builder/types/builder.types";
 import type { BuilderAdminClient } from "./types";
+
+type TraitOptionModifierRow = {
+  trait_option_id: number;
+  choice_mode_key: string | null;
+  affected_stat: string | null;
+  operation: string;
+  modifier_value: number;
+  max_value: number | null;
+};
+
+function mapModifiersByOption(
+  rows: TraitOptionModifierRow[] | null | undefined,
+): Map<number, BuilderTraitOptionModifier[]> {
+  const byOption = new Map<number, BuilderTraitOptionModifier[]>();
+
+  for (const row of rows ?? []) {
+    const list = byOption.get(row.trait_option_id) ?? [];
+    list.push({
+      choice_mode_key: row.choice_mode_key,
+      affected_stat: row.affected_stat,
+      operation: row.operation,
+      modifier_value: row.modifier_value,
+      max_value: row.max_value,
+    });
+    byOption.set(row.trait_option_id, list);
+  }
+
+  return byOption;
+}
 
 export async function fetchOriginFeatChoicesBatch(
   admin: BuilderAdminClient,
@@ -44,6 +74,22 @@ export async function fetchOriginFeatChoicesBatch(
 
   if (optionError) throw new ApiError(optionError.message, 400);
 
+  const optionIds = (options ?? []).map((option) => option.id);
+  const { data: modifierRows, error: modifierError } = optionIds.length
+    ? await admin
+        .from("trait_option_modifiers")
+        .select(
+          "trait_option_id, choice_mode_key, affected_stat, operation, modifier_value, max_value",
+        )
+        .in("trait_option_id", optionIds)
+    : { data: [], error: null };
+
+  if (modifierError) throw new ApiError(modifierError.message, 400);
+
+  const modifiersByOption = mapModifiersByOption(
+    modifierRows as TraitOptionModifierRow[],
+  );
+
   for (const featId of uniqueIds) {
     const traitsForFeat = (featTraits ?? []).filter((row) => row.feat_id === featId);
     const choices: BuilderOriginFeatChoice[] = (groups ?? [])
@@ -66,6 +112,7 @@ export async function fetchOriginFeatChoicesBatch(
           trait_description: trait?.description ?? null,
           option_group: group.option_group,
           choice_count: group.choice_count,
+          is_required: group.is_required,
           options: (options ?? [])
             .filter(
               (opt) =>
@@ -79,6 +126,7 @@ export async function fetchOriginFeatChoicesBatch(
                 description: opt.description,
                 option_group: opt.option_group,
                 skill_id: opt.skill_id,
+                modifiers: modifiersByOption.get(opt.id) ?? [],
               }),
             ),
         } satisfies BuilderOriginFeatChoice;

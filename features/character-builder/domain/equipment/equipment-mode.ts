@@ -2,6 +2,7 @@ import { clampClassLevel } from "@/features/character-builder/domain/progression
 import { totalCharacterLevel } from "@/features/character-builder/domain/multiclass/multiclass";
 import {
   formatStartingGoldPreview,
+  startingGoldHasBonus,
   startingGoldGpForLevel,
 } from "@/features/character-builder/domain/equipment/starting-gold";
 import type {
@@ -26,11 +27,21 @@ export function effectiveEquipmentMode(
   classLevel: number,
   mode: EquipmentMode,
 ): EquipmentMode {
-  return supportsEquipmentModeToggle(classLevel) ? mode : "background";
+  if (!supportsEquipmentModeToggle(classLevel)) return "background";
+  if (mode === "starting_gold" && !startingGoldHasBonus(classLevel)) {
+    return "background";
+  }
+  return mode;
+}
+
+export function effectiveEquipmentModeForState(
+  state: CharacterBuilderState,
+): EquipmentMode {
+  return effectiveEquipmentMode(totalCharacterLevel(state), state.equipment_mode);
 }
 
 export function resolveStartingGoldGp(state: CharacterBuilderState): number {
-  const mode = effectiveEquipmentMode(state.class_level, state.equipment_mode);
+  const mode = effectiveEquipmentModeForState(state);
   if (mode !== "starting_gold" && mode !== "campaign_shop") {
     return 0;
   }
@@ -58,10 +69,10 @@ export function buildEquipmentInventory(
   background: BuilderBackgroundEntry,
   state: CharacterBuilderState,
 ): { item_id: number; quantity: number; is_equipped: boolean }[] {
-  const mode = effectiveEquipmentMode(state.class_level, state.equipment_mode);
+  const mode = effectiveEquipmentModeForState(state);
 
   if (mode === "starting_gold") {
-    return [];
+    return buildBackgroundInventory(background, state.equipment_option_key);
   }
 
   if (mode === "campaign_shop") {
@@ -76,7 +87,7 @@ export function buildEquipmentInventory(
 }
 
 export function equipmentChoiceLabel(state: CharacterBuilderState): string | undefined {
-  const mode = effectiveEquipmentMode(state.class_level, state.equipment_mode);
+  const mode = effectiveEquipmentModeForState(state);
   if (mode === "starting_gold") {
     const gp = resolveStartingGoldGp(state);
     return gp > 0 ? `${gp.toLocaleString("pt-BR")} PO` : "Ouro PHB";
@@ -85,7 +96,7 @@ export function equipmentChoiceLabel(state: CharacterBuilderState): string | und
 }
 
 export function formatEquipmentModeSummary(state: CharacterBuilderState): string | null {
-  const mode = effectiveEquipmentMode(state.class_level, state.equipment_mode);
+  const mode = effectiveEquipmentModeForState(state);
   if (mode === "starting_gold") {
     const preview = formatStartingGoldPreview(totalCharacterLevel(state));
     const gp = resolveStartingGoldGp(state);

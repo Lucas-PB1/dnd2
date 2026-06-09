@@ -17,7 +17,6 @@ import type {
   CreateCharacterBuilderPayload,
   TraitOptionSelection,
 } from "@/features/character-builder/types/builder.types";
-import { ABILITY_KEYS } from "@/features/character-builder/types/builder.types";
 import { CHARACTER_NAME_MIN } from "@/features/character-sheet/types/character.types";
 import {
   buildSkillsPayloadWithExpertise,
@@ -35,7 +34,7 @@ import {
 import { mergeOriginFeatTraitOptions } from "@/features/character-builder/domain/origin-feat";
 import {
   buildEquipmentInventory,
-  effectiveEquipmentMode,
+  effectiveEquipmentModeForState,
   resolveStartingGoldGp,
 } from "@/features/character-builder/domain/equipment/equipment-mode";
 import { validateShopPurchases } from "@/features/character-builder/domain/equipment/equipment-shop";
@@ -44,6 +43,30 @@ import {
   computeMulticlassMaxHp,
   validateMulticlassSplit,
 } from "@/features/character-builder/domain/multiclass/multiclass";
+import { applyProgressionAbilityDeltas } from "@/features/character-builder/domain/progression/asi";
+
+function requiredChoiceCountError(params: {
+  selectedCount: number;
+  choiceCount: number;
+  isRequired?: boolean;
+}): boolean {
+  if (params.isRequired === false) {
+    return params.selectedCount > 0 && params.selectedCount !== params.choiceCount;
+  }
+  return params.selectedCount !== params.choiceCount;
+}
+
+function toolSelectionsForGroup(
+  selections: { source_type: string; source_id: number; option_group?: string }[],
+  params: { source_type: string; source_id: number; option_group: string },
+) {
+  return selections.filter(
+    (entry) =>
+      entry.source_type === params.source_type &&
+      entry.source_id === params.source_id &&
+      (entry.option_group ?? params.option_group) === params.option_group,
+  );
+}
 
 export function buildRpcPayloadFromBuilderState(
   data: CharacterBuilderData,
@@ -80,10 +103,9 @@ export function buildRpcPayloadFromBuilderState(
     throw new ApiError(shopError, 400);
   }
 
-  if (
-    effectiveEquipmentMode(state.class_level, state.equipment_mode) === "campaign_shop" &&
-    state.shop_purchases.length === 0
-  ) {
+  const equipmentMode = effectiveEquipmentModeForState(state);
+
+  if (equipmentMode === "campaign_shop" && state.shop_purchases.length === 0) {
     throw new ApiError("Selecione itens na loja de campanha ou mude o modo de equipamento.", 400);
   }
 
@@ -145,7 +167,7 @@ export function buildRpcPayloadFromBuilderState(
     throw new ApiError("Humanos devem escolher um feat de origem (Versátil).", 400);
   }
 
-  if (effectiveEquipmentMode(state.class_level, state.equipment_mode) === "background") {
+  if (equipmentMode === "background" || equipmentMode === "starting_gold") {
     if (!state.equipment_option_key) {
       throw new ApiError("Escolha o equipamento inicial do antecedente.", 400);
     }
@@ -172,7 +194,13 @@ export function buildRpcPayloadFromBuilderState(
         opt.trait_id === group.trait_id &&
         opt.option_group === group.option_group,
     );
-    if (selected.length !== group.choice_count) {
+    if (
+      requiredChoiceCountError({
+        selectedCount: selected.length,
+        choiceCount: group.choice_count,
+        isRequired: group.is_required,
+      })
+    ) {
       throw new ApiError(
         `Complete as escolhas do feat de origem: ${group.trait_name}.`,
         400,
@@ -197,7 +225,13 @@ export function buildRpcPayloadFromBuilderState(
           opt.trait_id === group.trait_id &&
           opt.option_group === group.option_group,
       );
-      if (selected.length !== group.choice_count) {
+      if (
+        requiredChoiceCountError({
+          selectedCount: selected.length,
+          choiceCount: group.choice_count,
+          isRequired: group.is_required,
+        })
+      ) {
         throw new ApiError(
           `Complete as escolhas do feat Versátil: ${group.trait_name}.`,
           400,
@@ -224,10 +258,11 @@ export function buildRpcPayloadFromBuilderState(
   const starting_gold_gp = resolveStartingGoldGp(state);
 
   for (const group of cls.tool_choices) {
-    const selected = state.class_tool_selections.filter(
-      (entry) =>
-        entry.source_type === "class" && entry.source_id === cls.id,
-    );
+    const selected = toolSelectionsForGroup(state.class_tool_selections, {
+      source_type: "class",
+      source_id: cls.id,
+      option_group: group.option_group,
+    });
     if (selected.length !== group.choice_count) {
       throw new ApiError(
         `Selecione ${group.choice_count} ferramenta(s) de classe: ${group.option_group}.`,
@@ -240,10 +275,11 @@ export function buildRpcPayloadFromBuilderState(
     (opt) => !opt.tool_id && opt.tool_category,
   );
   for (const opt of requiredBackgroundToolChoices) {
-    const selected = state.background_tool_selections.filter(
-      (entry) =>
-        entry.source_type === "background" && entry.source_id === background.id,
-    );
+    const selected = toolSelectionsForGroup(state.background_tool_selections, {
+      source_type: "background",
+      source_id: background.id,
+      option_group: opt.option_group,
+    });
     if (selected.length !== opt.choice_count) {
       throw new ApiError(
         `Selecione a ferramenta do antecedente: ${opt.name}.`,
@@ -262,6 +298,7 @@ export function buildRpcPayloadFromBuilderState(
         name: opt.name,
         source_type: "background",
         source_id: background.id,
+        option_group: opt.option_group,
       });
     }
   }
@@ -303,7 +340,12 @@ export function buildRpcPayloadFromBuilderState(
     : [];
   const trait_spell_choices = buildFeatSpellsRpcPayload(data, state);
 
-  const constitution = abilities.CON;
+  const abilitiesForDerivedStats = applyProgressionAbilityDeltas(
+    abilities,
+    data,
+    state,
+  );
+  const constitution = abilitiesForDerivedStats.CON;
   const max_hp = computeMulticlassMaxHp(state, data.classes, abilityModifier(constitution));
 
   return {

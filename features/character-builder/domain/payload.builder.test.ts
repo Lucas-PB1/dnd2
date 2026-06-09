@@ -379,6 +379,7 @@ describe("buildRpcPayloadFromBuilderState", () => {
     ]);
     expect(payload.trait_options.some((entry) => entry.trait_id === 401)).toBe(true);
     expect(payload.spells).toEqual([]);
+    expect(payload.max_hp).toBe(65);
     expect(payload.inventory).toEqual([
       { item_id: 900, quantity: 1, is_equipped: false },
     ]);
@@ -406,18 +407,109 @@ describe("buildRpcPayloadFromBuilderState", () => {
     ]);
   });
 
-  it("monta payload nível 10 com ouro PHB (sem inventário do antecedente)", () => {
+  it("monta payload nível 10 com ouro PHB e pacote do antecedente", () => {
     const state = wizardState({
       equipment_mode: "starting_gold",
-      equipment_option_key: null,
+      equipment_option_key: "A",
     });
 
     const payload = buildRpcPayloadFromBuilderState(wizardData(), state);
 
-    expect(payload.inventory).toEqual([]);
+    expect(payload.inventory).toEqual([
+      { item_id: 900, quantity: 1, is_equipped: false },
+    ]);
     expect(payload.starting_gold_gp).toBeGreaterThan(0);
 
     const rpc = toCreateCharacterRpcBody(payload);
     expect(rpc.starting_gold_gp).toBe(payload.starting_gold_gp);
+  });
+
+  it("Fighter nível 5 reflete ASI em CON no HP final", () => {
+    const data = fighterData();
+    const strAsiState = baseState({
+      progression_feat_trait_options: [
+        {
+          trait_id: 502,
+          option_group: "Ability Score",
+          selection_key: "level_4:Ability Score:0",
+          trait_option_id: 5021,
+        },
+        {
+          trait_id: 502,
+          option_group: "Ability Score",
+          selection_key: "level_4:Ability Score:1",
+          trait_option_id: 5021,
+        },
+      ],
+    });
+
+    const withMixedAsi = buildRpcPayloadFromBuilderState(data, baseState());
+    const withStrAsi = buildRpcPayloadFromBuilderState(data, strAsiState);
+
+    expect(withMixedAsi.max_hp).toBeGreaterThan(withStrAsi.max_hp ?? 0);
+    expect(withMixedAsi.max_hp).toBe(65);
+    expect(withStrAsi.max_hp).toBe(60);
+  });
+
+  it("combina ASI, equipamento starting_gold e ferramentas de classe no payload", () => {
+    const data = fighterData();
+    data.classes[0].tool_choices = [
+      {
+        option_group: "Tool Proficiency",
+        choice_count: 3,
+        notes: null,
+        tool_category: "Musical Instrument",
+        options: [
+          { tool_id: 1, name: "Lute", category: "Musical Instrument" },
+          { tool_id: 2, name: "Flute", category: "Musical Instrument" },
+          { tool_id: 3, name: "Drum", category: "Musical Instrument" },
+        ],
+      },
+    ];
+
+    const payload = buildRpcPayloadFromBuilderState(
+      data,
+      baseState({
+        class_level: 5,
+        equipment_mode: "starting_gold",
+        equipment_option_key: "A",
+        class_tool_selections: [
+          {
+            tool_id: 1,
+            name: "Lute",
+            source_type: "class",
+            source_id: 30,
+            option_group: "Tool Proficiency",
+          },
+          {
+            tool_id: 2,
+            name: "Flute",
+            source_type: "class",
+            source_id: 30,
+            option_group: "Tool Proficiency",
+          },
+          {
+            tool_id: 3,
+            name: "Drum",
+            source_type: "class",
+            source_id: 30,
+            option_group: "Tool Proficiency",
+          },
+        ],
+      }),
+    );
+
+    expect(payload.feats).toHaveLength(1);
+    expect(payload.inventory).toEqual([
+      { item_id: 900, quantity: 1, is_equipped: false },
+    ]);
+    expect(payload.starting_gold_gp).toBeGreaterThan(0);
+    expect(payload.proficiencies).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ tool_id: 1, source_type: "class", source_id: 30 }),
+        expect.objectContaining({ tool_id: 2, source_type: "class", source_id: 30 }),
+        expect.objectContaining({ tool_id: 3, source_type: "class", source_id: 30 }),
+      ]),
+    );
   });
 });

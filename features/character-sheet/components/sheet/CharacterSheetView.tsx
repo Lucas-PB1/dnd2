@@ -9,6 +9,13 @@ import { CharacterSpellSlotsSection } from "@/features/character-sheet/component
 import { CharacterLevelUpSection } from "@/features/character-sheet/components/sheet/CharacterLevelUpSection";
 import { CharacterResourcesSection } from "@/features/character-sheet/components/sheet/CharacterResourcesSection";
 import { CharacterTraitsSection } from "@/features/character-sheet/components/sheet/CharacterTraitsSection";
+import { CharacterVitalsSection } from "@/features/character-sheet/components/sheet/CharacterVitalsSection";
+import { CharacterAbilitiesSection } from "@/features/character-sheet/components/sheet/CharacterAbilitiesSection";
+import { CharacterCombatSection } from "@/features/character-sheet/components/sheet/CharacterCombatSection";
+import { CharacterSpellsSection } from "@/features/character-sheet/components/sheet/CharacterSpellsSection";
+import { CharacterProficienciesSection } from "@/features/character-sheet/components/sheet/CharacterProficienciesSection";
+import { CharacterInventorySection } from "@/features/character-sheet/components/sheet/CharacterInventorySection";
+import { CharacterEffectsSection } from "@/features/character-sheet/components/sheet/CharacterEffectsSection";
 import { formatProficiencyBonus } from "@/features/character-sheet/domain/sheet-display";
 import type { CharacterDetail } from "@/features/character-sheet/types/character.types";
 
@@ -24,6 +31,8 @@ function formatClasses(character: CharacterDetail): string {
 }
 
 export function CharacterSheetView({ character }: CharacterSheetViewProps) {
+  const summary = character.sheet_summary;
+
   return (
     <article aria-labelledby="character-detail-heading">
       <FadeIn>
@@ -56,65 +65,82 @@ export function CharacterSheetView({ character }: CharacterSheetViewProps) {
 
       <FadeIn delay={0.12} className="mt-6">
         <Surface className="p-6">
-        <dl className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <dt className="text-xs uppercase tracking-wide text-muted-subtle">Espécie</dt>
-            <dd className="mt-1 text-foreground">{character.species_name ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className="text-xs uppercase tracking-wide text-muted-subtle">Antecedente</dt>
-            <dd className="mt-1 text-foreground">{character.background_name ?? "—"}</dd>
-          </div>
-          <div className="sm:col-span-2">
-            <dt className="text-xs uppercase tracking-wide text-muted-subtle">Classes</dt>
-            <dd className="mt-1 text-foreground">{formatClasses(character)}</dd>
-          </div>
-          {character.starting_gold_gp > 0 ? (
+          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <dt className="text-xs uppercase tracking-wide text-muted-subtle">Ouro inicial</dt>
-              <dd className="mt-1 font-medium text-foreground">
-                {character.starting_gold_gp.toLocaleString("pt-BR")} PO
+              <dt className="text-xs text-muted-subtle">Espécie</dt>
+              <dd className="mt-1 text-foreground">
+                {character.species_name ?? "—"}
               </dd>
             </div>
-          ) : null}
-        </dl>
+            <div>
+              <dt className="text-xs text-muted-subtle">Antecedente</dt>
+              <dd className="mt-1 text-foreground">
+                {character.background_name ?? "—"}
+              </dd>
+            </div>
+            <div className="lg:col-span-2">
+              <dt className="text-xs text-muted-subtle">Classes</dt>
+              <dd className="mt-1 text-foreground">{formatClasses(character)}</dd>
+            </div>
+            {summary?.size ? (
+              <div>
+                <dt className="text-xs text-muted-subtle">Tamanho</dt>
+                <dd className="mt-1 text-foreground">{summary.size}</dd>
+              </div>
+            ) : null}
+            {summary?.feats ? (
+              <div className="sm:col-span-2">
+                <dt className="text-xs text-muted-subtle">Feats</dt>
+                <dd className="mt-1 text-foreground">{summary.feats}</dd>
+              </div>
+            ) : null}
+            {character.starting_gold_gp > 0 ? (
+              <div>
+                <dt className="text-xs text-muted-subtle">Ouro inicial</dt>
+                <dd className="mt-1 font-medium text-foreground">
+                  {character.starting_gold_gp.toLocaleString("pt-BR")} PO
+                </dd>
+              </div>
+            ) : null}
+          </dl>
         </Surface>
       </FadeIn>
 
-      {character.spellcasting && character.spell_slots.length > 0 ? (
-        <FadeIn delay={0.15} className="mt-6">
-          <CharacterSpellSlotsSection
-            spellcasting={character.spellcasting}
-            slots={character.spell_slots}
-          />
-        </FadeIn>
-      ) : null}
+      <FadeIn delay={0.15} className="mt-6">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,0.42fr)]">
+          <div className="space-y-6">
+            <CharacterAbilitiesSection character={character} />
+            <CharacterCombatSection character={character} />
+            <CharacterSpellsSection character={character} />
+            <CharacterInventorySection inventory={character.inventory} />
+            <CharacterTraitsSection traits={character.traits} />
+          </div>
 
-      {character.resources.length > 0 ? (
-        <FadeIn delay={0.16} className="mt-6">
-          <CharacterResourcesSection resources={character.resources} />
-        </FadeIn>
-      ) : null}
+          <aside className="space-y-6">
+            <CharacterVitalsSection character={character} />
 
-      {character.is_owner ? (
-        <FadeIn delay={0.165} className="mt-6">
-          <CharacterLevelUpSection character={character} />
-        </FadeIn>
-      ) : null}
+            {character.spellcasting && character.spell_slots.length > 0 ? (
+              <CharacterSpellSlotsSection
+                spellcasting={character.spellcasting}
+                slots={character.spell_slots}
+              />
+            ) : null}
 
-      {character.traits.length > 0 ? (
-        <FadeIn delay={0.17} className="mt-6">
-          <CharacterTraitsSection traits={character.traits} />
-        </FadeIn>
-      ) : null}
+            {character.resources.length > 0 ? (
+              <CharacterResourcesSection resources={character.resources} />
+            ) : null}
 
-      <FadeIn delay={0.18} className="mt-6">
-        <Surface tone="dashed" className="p-6">
-          <h2 className="text-sm font-medium text-muted">Em breve</h2>
-          <p className="mt-2 text-sm text-muted-subtle">
-            Equipamento, magias, combate e vínculo com campanhas.
-          </p>
-        </Surface>
+            <CharacterProficienciesSection character={character} />
+            <CharacterEffectsSection
+              effects={character.active_effects}
+              modifiers={character.stat_modifiers}
+            />
+
+            {character.is_owner ? (
+              <CharacterLevelUpSection character={character} />
+            ) : null}
+          </aside>
+        </div>
       </FadeIn>
     </article>
   );

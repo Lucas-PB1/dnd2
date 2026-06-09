@@ -18,6 +18,7 @@ type BuilderShellProps = {
   onStepClick?: (step: number) => void;
   error?: string | null;
   loadError?: string | null;
+  headerActions?: ReactNode;
   footer: ReactNode;
   children: ReactNode;
 };
@@ -58,6 +59,7 @@ export function BuilderShell({
   onStepClick,
   error,
   loadError,
+  headerActions,
   footer,
   children,
 }: BuilderShellProps) {
@@ -117,21 +119,25 @@ export function BuilderShell({
       ref={shellRef}
       className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden"
     >
-      <header className="flex shrink-0 items-center justify-between gap-4 border-b border-border pb-3">
-        <div className="min-w-0">
-          <Link
-            href="/ficha"
-            transitionTypes={["nav-back"]}
-            className="inline-flex items-center gap-1.5 text-sm text-brand transition-colors hover:text-brand-hover"
-          >
-            <ArrowLeft className="size-4" aria-hidden />
-            Voltar às fichas
-          </Link>
-          <h1 className="font-serif text-xl font-semibold text-foreground sm:text-2xl">
-            Novo personagem
-          </h1>
+      <header className="shrink-0 border-b border-border pb-3">
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+          <div className="min-w-0">
+            <Link
+              href="/ficha"
+              transitionTypes={["nav-back"]}
+              className="inline-flex items-center gap-1.5 text-sm text-brand transition-colors hover:text-brand-hover"
+            >
+              <ArrowLeft className="size-4" aria-hidden />
+              Voltar às fichas
+            </Link>
+            <h1 className="font-serif text-xl font-semibold text-foreground sm:text-2xl">
+              Novo personagem
+            </h1>
+          </div>
+          {headerActions ? (
+            <div className="flex shrink-0 items-center">{headerActions}</div>
+          ) : null}
         </div>
-        <div className="flex shrink-0 items-center gap-2">{footer}</div>
       </header>
 
       {loadError ? (
@@ -179,6 +185,10 @@ export function BuilderShell({
       >
         <BuilderStepNav currentStep={currentStep} onStepClick={onStepClick} />
       </nav>
+
+      <footer className="mt-4 flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-border pt-3">
+        {footer}
+      </footer>
     </div>
   );
 }

@@ -2,8 +2,8 @@ import { ChipToggle } from "@/features/character-builder/components/shared/Build
 import type { BuilderClassEntry } from "@/features/character-builder/types/builder.types";
 import {
   getExpertiseSelectionsForTrait,
-  setClassTool,
   toggleClassSkill,
+  toggleClassTool,
   toggleExpertiseSkill,
 } from "@/features/character-builder/hooks/useCharacterBuilder";
 import { eligibleSkillsForExpertiseGroup, formatExpertiseGroupLabel } from "@/features/character-builder/domain/expertise/class-expertise";
@@ -126,10 +126,27 @@ export function ChoicesSkillsTab({
       })}
 
       {cls.tool_choices.map((group) => {
+        const fixedOptions = group.options.filter(
+          (tool): tool is typeof tool & { tool_id: number } =>
+            tool.tool_id !== null,
+        );
+        const categoryOptions =
+          group.tool_category !== null
+            ? (data.tools_by_category[group.tool_category] ?? []).filter(
+                (tool): tool is typeof tool & { tool_id: number } =>
+                  tool.tool_id !== null,
+              )
+            : [];
+        const selectableOptions = [...fixedOptions, ...categoryOptions].filter(
+          (tool, index, list) =>
+            list.findIndex((entry) => entry.tool_id === tool.tool_id) === index,
+        );
         const selectedInGroup = state.class_tool_selections
           .filter(
             (entry) =>
-              entry.source_type === "class" && entry.source_id === cls.id,
+              entry.source_type === "class" &&
+              entry.source_id === cls.id &&
+              (entry.option_group ?? group.option_group) === group.option_group,
           )
           .map((entry) => entry.tool_id)
           .filter((id): id is number => id !== null);
@@ -144,10 +161,7 @@ export function ChoicesSkillsTab({
             ) : null}
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {visibleWhenTaken(
-                group.options.filter(
-                  (tool): tool is typeof tool & { tool_id: number } =>
-                    tool.tool_id !== null,
-                ),
+                selectableOptions,
                 selectedInGroup,
                 classToolIds.filter((id) => !selectedInGroup.includes(id)),
                 (tool) => tool.tool_id,
@@ -161,12 +175,13 @@ export function ChoicesSkillsTab({
                     selected={selected}
                     onToggle={() =>
                       onChange(
-                        setClassTool(state, {
+                        toggleClassTool(state, {
                           tool_id: toolId,
                           name: tool.name,
                           source_type: "class",
                           source_id: cls.id,
-                        }),
+                          option_group: group.option_group,
+                        }, group.choice_count),
                       )
                     }
                   />

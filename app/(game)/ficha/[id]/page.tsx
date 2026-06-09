@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAuthedClient } from "@/lib/api/require-user";
 import { getCharacterForUser } from "@/lib/character/server";
 import { CharacterSheetView } from "@/features/character-sheet";
 
@@ -29,10 +30,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function FichaDetailPage({ params }: PageProps) {
-  const supabase = await createClient();
-  const { data: claimsData } = await supabase.auth.getClaims();
-
-  if (!claimsData?.claims?.sub) {
+  let auth: Awaited<ReturnType<typeof createAuthedClient>>;
+  try {
+    auth = await createAuthedClient();
+  } catch {
     redirect("/entrar");
   }
 
@@ -43,7 +44,11 @@ export default async function FichaDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const character = await getCharacterForUser(characterId, claimsData.claims.sub);
+  const character = await getCharacterForUser(
+    characterId,
+    auth.userId,
+    auth.supabase,
+  );
 
   if (!character) {
     notFound();

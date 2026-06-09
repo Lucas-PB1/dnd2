@@ -29,8 +29,10 @@ async function fetchShopItems(level: number): Promise<ShopItemRow[]> {
 }
 
 export function ChoicesShopSection({ state, onChange }: ChoicesShopSectionProps) {
-  const [items, setItems] = useState<ShopItemRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [catalog, setCatalog] = useState<{
+    level: number | null;
+    items: ShopItemRow[];
+  }>({ level: null, items: [] });
   const totalLevel = totalCharacterLevel(state);
   const budget = shopBudgetGp(state);
   const spent = shopSpentGp(state.shop_purchases);
@@ -38,11 +40,22 @@ export function ChoicesShopSection({ state, onChange }: ChoicesShopSectionProps)
   const magicBand = magicItemBandLabel(totalLevel);
 
   useEffect(() => {
-    setLoading(true);
+    let active = true;
     fetchShopItems(totalLevel)
-      .then((rows) => setItems(filterShopItemsForLevel(rows, totalLevel)))
-      .finally(() => setLoading(false));
+      .then((rows) => {
+        if (!active) return;
+        setCatalog({
+          level: totalLevel,
+          items: filterShopItemsForLevel(rows, totalLevel),
+        });
+      });
+    return () => {
+      active = false;
+    };
   }, [totalLevel]);
+
+  const loading = catalog.level !== totalLevel;
+  const items = loading ? [] : catalog.items;
 
   return (
     <div className="space-y-3">

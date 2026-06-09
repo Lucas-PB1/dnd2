@@ -12,6 +12,7 @@ type TraitGroup = {
   trait_id: number;
   option_group: string;
   choice_count: number;
+  is_required?: boolean;
   notes?: string | null;
   options: BuilderTraitOption[];
 };
@@ -82,11 +83,30 @@ export function TraitOptionGroupSection({
     ? title
     : traitSectionTitle(title, group.option_group);
 
+  const showTraitDescription = Boolean(traitDescription) && !onOptionInfo;
+
   return (
     <section key={sectionKey}>
       <p className="text-xs font-medium text-foreground">{displayTitle}</p>
-      {traitDescription ? (
-        <p className="mt-1 text-xs leading-relaxed text-muted">
+      {group.is_required === false ? (
+        <p className="mt-0.5 text-xs text-muted-subtle">
+          Opcional
+          {inGroup.length > 0
+            ? ` (${inGroup.length}/${group.choice_count})`
+            : ""}
+        </p>
+      ) : group.choice_count > 1 ? (
+        <p className="mt-0.5 text-xs text-muted-subtle">
+          Escolha {group.choice_count} opções ({inGroup.length}/{group.choice_count})
+        </p>
+      ) : group.choice_count === 1 ? (
+        <p className="mt-0.5 text-xs text-muted-subtle">
+          Escolha 1 opção
+          {inGroup.length > 0 ? " (selecionada)" : ""}
+        </p>
+      ) : null}
+      {showTraitDescription ? (
+        <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted">
           {traitDescription}
         </p>
       ) : null}
@@ -108,7 +128,7 @@ export function TraitOptionGroupSection({
             <ChipToggle
               key={opt.trait_option_id}
               label={opt.name}
-              description={opt.description}
+              description={onOptionInfo ? undefined : opt.description}
               selected={selected}
               disabled={!selected && inGroup.length >= group.choice_count}
               size="sm"

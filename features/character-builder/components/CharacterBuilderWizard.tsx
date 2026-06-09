@@ -32,6 +32,7 @@ import {
 } from "@/features/character-builder/services/builder.service";
 import { applyLockedOriginFeatToState } from "@/features/character-builder/domain/origin-feat";
 import { clampClassLevel } from "@/features/character-builder/domain/progression/levels";
+import { totalCharacterLevel } from "@/features/character-builder/domain/multiclass/multiclass";
 
 export function CharacterBuilderWizard() {
   const router = useRouter();
@@ -96,7 +97,7 @@ export function CharacterBuilderWizard() {
       setState((prev) => ({
         ...prev,
         equipment_mode:
-          prev.class_level <= 1 ? "background" : prev.equipment_mode,
+          totalCharacterLevel(prev) <= 1 ? "background" : prev.equipment_mode,
         equipment_option_key: null,
         cantrip_spell_ids: [],
         spellbook_spell_ids: [],
@@ -110,7 +111,7 @@ export function CharacterBuilderWizard() {
     return () => {
       active = false;
     };
-  }, [state.class_id, state.species_id, state.background_id, state.class_level, state.subclass_id]);
+  }, [state.class_id, state.species_id, state.background_id, state.class_level, state.subclass_id, state.secondary_class]);
 
   useEffect(() => {
     if (!data?.details_loaded || !state.background_id) return;
@@ -344,15 +345,18 @@ export function CharacterBuilderWizard() {
     }
   }, [data, state, patchState, stepBusy, loadingCatalog, refetchSummary]);
 
+  const headerActions = (
+    <BuilderImportExport
+      state={state}
+      onImport={(imported) => {
+        setState(imported);
+        setStepError(null);
+      }}
+    />
+  );
+
   const footer = (
     <>
-      <BuilderImportExport
-        state={state}
-        onImport={(imported) => {
-          setState(imported);
-          setStepError(null);
-        }}
-      />
       <Button
         type="button"
         variant="ghost"
@@ -400,6 +404,7 @@ export function CharacterBuilderWizard() {
       onStepClick={goToStep}
       error={stepError}
       loadError={loadError}
+      headerActions={headerActions}
       footer={footer}
     >
       {stepContent}

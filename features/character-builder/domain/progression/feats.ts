@@ -17,6 +17,21 @@ import { ABILITY_KEYS } from "@/features/character-builder/types/builder.types";
 
 export const ASI_FEAT_NAME = "Ability Score Improvement";
 
+const PREREQUISITE_ABILITY_NAMES: Record<string, AbilityKey> = {
+  STR: "STR",
+  DEX: "DEX",
+  CON: "CON",
+  INT: "INT",
+  WIS: "WIS",
+  CHA: "CHA",
+  Strength: "STR",
+  Dexterity: "DEX",
+  Constitution: "CON",
+  Intelligence: "INT",
+  Wisdom: "WIS",
+  Charisma: "CHA",
+};
+
 export function progressionFeatLevelsForClass(
   classLevel: number,
 ): ProgressionFeatLevel[] {
@@ -55,47 +70,122 @@ export function progressionSlotKey(atLevel: ProgressionFeatLevel): string {
 
 export function parseMinLevelPrerequisite(text: string | null): number | null {
   if (!text) return null;
-  const match = text.match(/level\s+(\d+)\+/i);
+  const match = text.match(/level\s+(\d+)\+?/i);
   return match ? Number(match[1]) : null;
 }
 
 export function parseAbilityPrerequisite(
   text: string | null,
 ): AbilityKey | null {
-  if (!text) return null;
-  for (const key of ABILITY_KEYS) {
-    if (new RegExp(`\\b${key}\\s+\\d+`, "i").test(text)) {
-      return key;
-    }
-  }
-  return null;
+  return parseAbilityPrerequisites(text)[0]?.ability ?? null;
 }
 
 export function parseAbilityPrerequisiteMin(
   text: string | null,
 ): number | null {
-  if (!text) return null;
-  const match = text.match(/\b(STR|DEX|CON|INT|WIS|CHA)\s+(\d+)/i);
-  return match ? Number(match[2]) : null;
+  return parseAbilityPrerequisites(text)[0]?.minimum ?? null;
+}
+
+export function parseAbilityPrerequisites(
+  text: string | null,
+): { ability: AbilityKey; minimum: number }[] {
+  if (!text) return [];
+
+  const names = [
+    ...ABILITY_KEYS,
+    "Strength",
+    "Dexterity",
+    "Constitution",
+    "Intelligence",
+    "Wisdom",
+    "Charisma",
+  ].join("|");
+  const matches = text.matchAll(new RegExp(`\\b(${names})\\s+(\\d+)\\+?`, "gi"));
+  const parsed: { ability: AbilityKey; minimum: number }[] = [];
+
+  for (const match of matches) {
+    const raw = match[1];
+    const ability = Object.entries(PREREQUISITE_ABILITY_NAMES).find(
+      ([name]) => name.toLowerCase() === raw.toLowerCase(),
+    )?.[1];
+    const minimum = Number(match[2]);
+    if (ability && Number.isFinite(minimum)) {
+      parsed.push({ ability, minimum });
+    }
+  }
+
+  return parsed;
 }
 
 export function featEligibleAtLevel(
   feat: BuilderProgressionFeat,
-  classLevel: number,
+  slotLevel: number,
   abilities: Record<AbilityKey, number>,
 ): boolean {
   const minLevel = parseMinLevelPrerequisite(feat.prerequisite_text);
-  if (minLevel !== null && classLevel < minLevel) {
+  if (minLevel !== null && slotLevel < minLevel) {
     return false;
   }
 
-  const abilityKey = parseAbilityPrerequisite(feat.prerequisite_text);
-  const abilityMin = parseAbilityPrerequisiteMin(feat.prerequisite_text);
-  if (abilityKey && abilityMin !== null && abilities[abilityKey] < abilityMin) {
+  const abilityPrerequisites = parseAbilityPrerequisites(feat.prerequisite_text);
+  if (
+    abilityPrerequisites.length > 0 &&
+    !abilityPrerequisites.some(
+      ({ ability, minimum }) => abilities[ability] >= minimum,
+    )
+  ) {
     return false;
   }
 
   return true;
+}
+
+function selectedFeatIdsInOtherSlots(
+  state: CharacterBuilderState,
+  atLevel: ProgressionFeatLevel,
+): Set<number> {
+  return new Set(
+    syncProgressionFeatSlots(state)
+      .filter(
+        (slot) =>
+          slot.at_level !== atLevel &&
+          slot.kind === "feat" &&
+          slot.feat_id !== null,
+      )
+      .map((slot) => slot.feat_id as number),
+  );
+}
+
+function choiceGroupIsRequired(group: { is_required?: boolean }): boolean {
+  return group.is_required !== false;
+}
+
+function validateProgressionChoiceGroups(
+  state: CharacterBuilderState,
+  atLevel: ProgressionFeatLevel,
+  featName: string,
+  groups: BuilderProgressionFeat["origin_feat_choices"],
+): string | null {
+  for (const group of groups) {
+    const selected = progressionTraitOptionsForSlot(state, atLevel).filter(
+      (entry) =>
+        entry.trait_id === group.trait_id &&
+        entry.option_group === group.option_group,
+    );
+
+    if (choiceGroupIsRequired(group)) {
+      if (selected.length !== group.choice_count) {
+        return `Complete as escolhas de ${featName} (nível ${atLevel}): ${group.trait_name}.`;
+      }
+      continue;
+    }
+
+    if (selected.length > 0 && selected.length !== group.choice_count) {
+      return `Complete as escolhas opcionais de ${featName} (nível ${atLevel}): ${group.trait_name}.`;
+    }
+  }
+
+  return null;
 }
 
 export function featsForProgressionSlot(
@@ -105,18 +195,20 @@ export function featsForProgressionSlot(
   abilities: Record<AbilityKey, number>,
 ): BuilderProgressionFeat[] {
   const isEpicSlot = atLevel === 19;
+  const selectedElsewhere = selectedFeatIdsInOtherSlots(state, atLevel);
 
   return data.progression_feats.filter((feat) => {
     if (feat.name === ASI_FEAT_NAME) return false;
-  if (isEpicSlot) {
-    return (
-      (feat.category === "Epic Boon" || feat.category === "General") &&
-      featEligibleAtLevel(feat, state.class_level, abilities)
-    );
-  }
+    if (!feat.is_repeatable && selectedElsewhere.has(feat.id)) return false;
+    if (isEpicSlot) {
+      return (
+        (feat.category === "Epic Boon" || feat.category === "General") &&
+        featEligibleAtLevel(feat, atLevel, abilities)
+      );
+    }
     if (feat.category === "Epic Boon") return false;
     if (feat.category !== "General") return false;
-    return featEligibleAtLevel(feat, state.class_level, abilities);
+    return featEligibleAtLevel(feat, atLevel, abilities);
   });
 }
 
@@ -207,16 +299,13 @@ export function validateProgressionFeatSelections(
       if (!asi) {
         return "Feat de ASI não encontrado no catálogo.";
       }
-      for (const group of asi.origin_feat_choices) {
-        const selected = progressionTraitOptionsForSlot(state, slot.at_level).filter(
-          (entry) =>
-            entry.trait_id === group.trait_id &&
-            entry.option_group === group.option_group,
-        );
-        if (selected.length !== group.choice_count) {
-          return `Complete o ASI do nível ${slot.at_level}: ${group.trait_name}.`;
-        }
-      }
+      const asiError = validateProgressionChoiceGroups(
+        state,
+        slot.at_level,
+        ASI_FEAT_NAME,
+        asi.origin_feat_choices,
+      );
+      if (asiError) return asiError.replace("Ability Score Improvement", "ASI");
       continue;
     }
 
@@ -229,24 +318,34 @@ export function validateProgressionFeatSelections(
       return `Feat inválido no nível ${slot.at_level}.`;
     }
 
-    if (!featEligibleAtLevel(feat, state.class_level, abilities)) {
+    if (!featEligibleAtLevel(feat, slot.at_level, abilities)) {
       return `Pré-requisitos não atendidos para ${feat.name} (nível ${slot.at_level}).`;
+    }
+
+    if (!feat.is_repeatable) {
+      const repeated = syncProgressionFeatSlots(state).filter(
+        (entry) => entry.kind === "feat" && entry.feat_id === feat.id,
+      );
+      if (repeated.length > 1) {
+        return `${feat.name} não pode ser escolhido mais de uma vez.`;
+      }
     }
 
     if (slot.at_level === 19 && slot.kind === "feat" && feat && feat.category !== "Epic Boon" && feat.category !== "General") {
       return `No nível 19, escolha um Epic Boon ou feat geral elegível.`;
     }
 
-    for (const group of feat.origin_feat_choices) {
-      const selected = progressionTraitOptionsForSlot(state, slot.at_level).filter(
-        (entry) =>
-          entry.trait_id === group.trait_id &&
-          entry.option_group === group.option_group,
-      );
-      if (selected.length !== group.choice_count) {
-        return `Complete as escolhas de ${feat.name} (nível ${slot.at_level}): ${group.trait_name}.`;
-      }
+    if (slot.at_level !== 19 && feat.category !== "General") {
+      return `No nível ${slot.at_level}, escolha um feat geral elegível.`;
     }
+
+    const groupError = validateProgressionChoiceGroups(
+      state,
+      slot.at_level,
+      feat.name,
+      feat.origin_feat_choices,
+    );
+    if (groupError) return groupError;
   }
 
   return null;

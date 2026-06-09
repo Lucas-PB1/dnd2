@@ -82,7 +82,7 @@ export function ChoicesFeatsTab({
         <TraitOptionGroupSection
           key={`human-${group.trait_id}-${group.option_group}`}
           sectionKey={`human-${group.trait_id}-${group.option_group}`}
-          title={`${humanFeat.name}: ${group.trait_name}`}
+          title={group.trait_name}
           traitDescription={group.trait_description}
           group={group}
           selections={state.human_origin_feat_trait_options}
@@ -99,16 +99,17 @@ export function ChoicesFeatsTab({
       {lockedOriginFeat ? (
         <section>
           <p className="text-xs font-medium text-foreground">
-            {background.origin_feat_name}: {lockedOriginFeat.trait_name}
+            {lockedOriginFeat.trait_name}
           </p>
-          <p className="text-xs text-muted">
+          <p className="mt-0.5 text-xs text-muted-subtle">
             Definido pelo antecedente {background.name}.
           </p>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
             <ChipToggle
               label={lockedOriginFeat.option_name}
               selected
               disabled
+              size="sm"
               onToggle={() => {}}
             />
           </div>
@@ -119,7 +120,7 @@ export function ChoicesFeatsTab({
         <TraitOptionGroupSection
           key={`${group.trait_id}-${group.option_group}`}
           sectionKey={`${group.trait_id}-${group.option_group}`}
-          title={`${background.origin_feat_name}: ${group.trait_name}`}
+          title={group.trait_name}
           traitDescription={group.trait_description}
           group={group}
           selections={originFeatSelections}

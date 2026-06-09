@@ -5,9 +5,9 @@ export {
   updateBackgroundAsi,
 } from "./abilities";
 export {
-  setBackgroundTool,
-  setClassTool,
+  toggleBackgroundTool,
   setHumanOriginFeat,
+  toggleClassTool,
   toggleCantripSpell,
   toggleClassSkill,
   toggleFeatSpell,

@@ -11,7 +11,7 @@ import { validateSpellSelections } from "@/features/character-builder/domain/spe
 import { validateFeatSpellSelections } from "@/features/character-builder/domain/spells/feat-spells";
 import { validateMulticlassSplit } from "@/features/character-builder/domain/multiclass/multiclass";
 import { validateShopPurchases } from "@/features/character-builder/domain/equipment/equipment-shop";
-import { effectiveEquipmentMode } from "@/features/character-builder/domain/equipment/equipment-mode";
+import { effectiveEquipmentModeForState } from "@/features/character-builder/domain/equipment/equipment-mode";
 import { mergeOriginFeatTraitOptions } from "@/features/character-builder/domain/origin-feat";
 import type {
   CharacterBuilderData,
@@ -23,6 +23,29 @@ import {
   selectedSpecies,
 } from "./selectors";
 import { selectedRollSet } from "./state";
+
+function requiredChoiceCountError(params: {
+  selectedCount: number;
+  choiceCount: number;
+  isRequired?: boolean;
+}): boolean {
+  if (params.isRequired === false) {
+    return params.selectedCount > 0 && params.selectedCount !== params.choiceCount;
+  }
+  return params.selectedCount !== params.choiceCount;
+}
+
+function toolSelectionCount(
+  selections: { source_type: string; source_id: number; option_group?: string }[],
+  params: { source_type: string; source_id: number; option_group: string },
+): number {
+  return selections.filter(
+    (entry) =>
+      entry.source_type === params.source_type &&
+      entry.source_id === params.source_id &&
+      (entry.option_group ?? params.option_group) === params.option_group,
+  ).length;
+}
 
 export function validateBuilderStep(
   data: CharacterBuilderData | null,
@@ -117,14 +140,24 @@ export function validateBuilderStep(
       }
 
       for (const group of cls.tool_choices) {
-        if (state.class_tool_selections.length < group.choice_count) {
+        const count = toolSelectionCount(state.class_tool_selections, {
+          source_type: "class",
+          source_id: cls.id,
+          option_group: group.option_group,
+        });
+        if (count !== group.choice_count) {
           return `Selecione ferramenta(s) de classe: ${group.option_group}.`;
         }
       }
 
       for (const opt of background.tool_proficiency_options) {
         if (!opt.tool_id && opt.tool_category) {
-          if (state.background_tool_selections.length < opt.choice_count) {
+          const count = toolSelectionCount(state.background_tool_selections, {
+            source_type: "background",
+            source_id: background.id,
+            option_group: opt.option_group,
+          });
+          if (count !== opt.choice_count) {
             return "Selecione a ferramenta do antecedente.";
           }
         }
@@ -159,18 +192,25 @@ export function validateBuilderStep(
             entry.trait_id === group.trait_id &&
             entry.option_group === group.option_group,
         ).length;
-        if (count !== group.choice_count) {
+        if (
+          requiredChoiceCountError({
+            selectedCount: count,
+            choiceCount: group.choice_count,
+            isRequired: group.is_required,
+          })
+        ) {
           return `Complete as escolhas do feat: ${group.trait_name}.`;
         }
       }
 
-      if (effectiveEquipmentMode(state.class_level, state.equipment_mode) === "background") {
+      const equipmentMode = effectiveEquipmentModeForState(state);
+      if (equipmentMode === "background" || equipmentMode === "starting_gold") {
         if (!state.equipment_option_key) {
           return "Escolha o equipamento inicial do antecedente.";
         }
       }
 
-      if (effectiveEquipmentMode(state.class_level, state.equipment_mode) === "campaign_shop") {
+      if (equipmentMode === "campaign_shop") {
         if (state.shop_purchases.length === 0) {
           return "Selecione itens na loja de campanha.";
         }
@@ -194,7 +234,13 @@ export function validateBuilderStep(
               entry.trait_id === group.trait_id &&
               entry.option_group === group.option_group,
           ).length;
-          if (count !== group.choice_count) {
+          if (
+            requiredChoiceCountError({
+              selectedCount: count,
+              choiceCount: group.choice_count,
+              isRequired: group.is_required,
+            })
+          ) {
             return `Complete as escolhas do feat Versátil: ${group.trait_name}.`;
           }
         }

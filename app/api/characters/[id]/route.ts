@@ -11,7 +11,7 @@ type RouteContext = {
 
 export async function GET(_request: Request, context: RouteContext) {
   try {
-    const { userId } = await createAuthedClient();
+    const { supabase, userId } = await createAuthedClient();
     const { id } = await context.params;
     const characterId = Number(id);
 
@@ -19,7 +19,7 @@ export async function GET(_request: Request, context: RouteContext) {
       return jsonError("Personagem inválido.", 400);
     }
 
-    const character = await getCharacterForUser(characterId, userId);
+    const character = await getCharacterForUser(characterId, userId, supabase);
 
     if (!character) {
       return jsonError("Personagem não encontrado.", 404);

@@ -16,6 +16,180 @@ export type CharacterSpellcastingInfo = {
   spellcasting_ability: string | null;
 };
 
+export type CharacterAbilityKey = "STR" | "DEX" | "CON" | "INT" | "WIS" | "CHA";
+
+export type CharacterSheetSummary = {
+  size: string | null;
+  speed: number;
+  current_hp: number;
+  max_hp: number;
+  temporary_hp: number;
+  death_save_successes: number;
+  death_save_failures: number;
+  heroic_inspiration: boolean;
+  armor_class: number;
+  feats: string | null;
+  conditions: string | null;
+};
+
+export type CharacterAbilityScore = {
+  ability: CharacterAbilityKey;
+  label: string;
+  score: number;
+  modifier: number;
+};
+
+export type CharacterSavingThrow = {
+  ability: CharacterAbilityKey;
+  label: string;
+  modifier: number;
+  proficient: boolean;
+};
+
+export type CharacterSkillCheck = {
+  skill: string;
+  base_attribute: CharacterAbilityKey;
+  modifier: number;
+  proficient: boolean;
+  expertise: boolean;
+};
+
+export type CharacterSpellcastingBlock = {
+  class_id: number;
+  class_name: string;
+  class_level: number;
+  spellcasting_ability: CharacterAbilityKey | null;
+  spell_attack_bonus: number | null;
+  spell_save_dc: number | null;
+};
+
+export type CharacterWeaponAttack = {
+  item_id: number;
+  name: string;
+  is_equipped: boolean;
+  attack_ability: CharacterAbilityKey | null;
+  attack_bonus: number | null;
+  damage_formula: string | null;
+  damage_type: string | null;
+  properties: string | null;
+};
+
+export type CharacterInventoryItem = {
+  item_id: number;
+  name: string;
+  quantity: number;
+  is_equipped: boolean;
+  item_type: "Weapon" | "Armor" | "Item" | string;
+  cost_gp: number | null;
+  weight_lb: number | null;
+  is_magical: boolean;
+  weapon_category: string | null;
+  damage_die: string | null;
+  die_count: number | null;
+  flat_bonus: number | null;
+  damage_type: string | null;
+  mastery_name: string | null;
+  weapon_properties: string | null;
+  armor_category: string | null;
+  ac_bonus: number | null;
+  min_strength: number | null;
+  stealth_disadvantage: boolean | null;
+  plus_dex_modifier: boolean | null;
+  max_dex_bonus: number | null;
+  is_attuned: boolean;
+  requires_attunement: boolean;
+  is_consumable: boolean;
+};
+
+export type CharacterProficiency = {
+  proficiency_type: "save" | "tool" | "language" | "weapon" | "armor" | "other" | string;
+  name: string;
+  tool_id: number | null;
+  tool_category: string | null;
+  tool_base_attribute: CharacterAbilityKey | null;
+  source_type: string | null;
+  source_id: number | null;
+};
+
+export type CharacterKnownSpell = {
+  spell_id: number;
+  name: string;
+  level: number;
+  school: string | null;
+  casting_time: string | null;
+  range_text: string | null;
+  components: string | null;
+  material_component: string | null;
+  duration_text: string | null;
+  requires_concentration: boolean;
+  requires_ritual: boolean;
+  save_attribute: CharacterAbilityKey | null;
+  attack_type: string | null;
+  source_type: string | null;
+  is_prepared: boolean;
+  always_prepared: boolean;
+};
+
+export type CharacterTraitOptionSummary = {
+  trait_id: number;
+  trait_name: string;
+  option_group: string;
+  choice_count: number;
+  is_required: boolean;
+  selection_key: string;
+  trait_option_id: number;
+  option_name: string;
+  option_description: string | null;
+  option_skill_name: string | null;
+  option_tool_name: string | null;
+  option_spell_list_name: string | null;
+  source_type: string | null;
+  source_id: number | null;
+  notes: string | null;
+};
+
+export type CharacterTraitSpellChoice = {
+  trait_id: number;
+  trait_name: string;
+  choice_group: string;
+  choice_count: number;
+  spell_level: number | null;
+  always_prepared: boolean;
+  free_casts_per: string | null;
+  selection_key: string;
+  spell_id: number;
+  spell_name: string;
+  level: number;
+  school: string | null;
+  trait_option_name: string | null;
+  spell_list_name: string | null;
+  source_type: string | null;
+  source_id: number | null;
+  notes: string | null;
+};
+
+export type CharacterActiveEffect = {
+  source_type: string;
+  source_name: string;
+  trait_name: string | null;
+  effect_name: string;
+  is_active: boolean;
+  duration_text: string | null;
+  modifiers: unknown[];
+  damage_adjustments: unknown[];
+  statuses: unknown[];
+  condition_adjustments: unknown[];
+  proficiencies: unknown[];
+};
+
+export type CharacterStatModifier = {
+  affected_stat: string;
+  operation: string;
+  modifier_value: number;
+  source_name: string;
+  is_active: boolean;
+};
+
 export type CharacterSummary = {
   id: number;
   name: string;
@@ -47,8 +221,22 @@ export type CharacterResourceSummary = {
 
 export type CharacterDetail = CharacterSummary & {
   is_owner: boolean;
+  sheet_summary: CharacterSheetSummary | null;
+  abilities: CharacterAbilityScore[];
+  saving_throws: CharacterSavingThrow[];
+  skills: CharacterSkillCheck[];
+  passive_perception: number | null;
   spell_slots: CharacterSpellSlot[];
   spellcasting: CharacterSpellcastingInfo | null;
+  spellcasting_entries: CharacterSpellcastingBlock[];
+  weapons: CharacterWeaponAttack[];
+  inventory: CharacterInventoryItem[];
+  proficiencies: CharacterProficiency[];
+  known_spells: CharacterKnownSpell[];
+  trait_options: CharacterTraitOptionSummary[];
+  trait_spell_choices: CharacterTraitSpellChoice[];
+  active_effects: CharacterActiveEffect[];
+  stat_modifiers: CharacterStatModifier[];
   traits: CharacterTraitSummary[];
   resources: CharacterResourceSummary[];
 };

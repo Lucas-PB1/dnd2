@@ -18,11 +18,7 @@ import {
   totalFeatSpellChoicesRequired,
   totalProgressionFeatSpellChoicesRequired,
 } from "@/features/character-builder/domain/spells/feat-spells";
-import {
-  effectiveEquipmentMode,
-  equipmentChoiceLabel,
-  supportsEquipmentModeToggle,
-} from "@/features/character-builder/domain/equipment/equipment-mode";
+import { equipmentChoiceLabel } from "@/features/character-builder/domain/equipment/equipment-mode";
 import {
   findLockedOriginFeatSelection,
   getVisibleOriginFeatChoices,
@@ -102,8 +98,8 @@ export function useChoiceTabs({
     const hasExpertise = classRequiresExpertiseSelection(expertiseGroups);
     const expertiseRequired = totalExpertiseChoicesRequired(expertiseGroups);
     const expertiseSelected = expertiseGroups.reduce(
-    (sum, group) =>
-      sum + getExpertiseSelectionsForTrait(state, group).length,
+      (sum, group) =>
+        sum + getExpertiseSelectionsForTrait(state, group).length,
       0,
     );
 
@@ -190,19 +186,7 @@ export function useChoiceTabs({
     species,
     background,
     humanFeat?.spellcasting,
-    state.class_skill_ids.length,
-    state.cantrip_spell_ids.length,
-    state.spellbook_spell_ids.length,
-    state.prepared_spell_ids.length,
-    state.expertise_by_trait,
-    state.equipment_option_key,
-    state.equipment_mode,
-    state.class_level,
-    state.feat_spell_selections.length,
-    state.class_trait_option_selections,
-    state.progression_feat_slots,
-    state.human_origin_feat_id,
+    state,
     progressionFeats,
-    background?.origin_feat_spellcasting,
   ]);
 }

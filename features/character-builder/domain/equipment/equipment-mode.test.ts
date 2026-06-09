@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildEquipmentInventory,
   effectiveEquipmentMode,
+  effectiveEquipmentModeForState,
   resolveStartingGoldGp,
   supportsEquipmentModeToggle,
 } from "@/features/character-builder/domain/equipment/equipment-mode";
@@ -89,14 +90,35 @@ describe("equipment mode", () => {
     expect(resolveStartingGoldGp(gearState())).toBe(0);
   });
 
-  it("modo starting_gold zera inventário e envia ouro PHB @ nível 5", () => {
+  it("modo starting_gold mantém pacote e envia ouro PHB @ nível 5", () => {
     const state = gearState({ equipment_mode: "starting_gold", equipment_option_key: null });
     expect(buildEquipmentInventory(background, state)).toEqual([]);
     expect(resolveStartingGoldGp(state)).toBe(638);
+
+    const withPackage = gearState({ equipment_mode: "starting_gold", equipment_option_key: "A" });
+    expect(buildEquipmentInventory(background, withPackage)).toEqual([
+      { item_id: 10, quantity: 1, is_equipped: false },
+    ]);
   });
 
-  it("starting_gold @ nível 2–4 concede 0 PO (sem bônus PHB)", () => {
+  it("starting_gold @ nível 2–4 volta para pacote normal", () => {
     const state = gearState({ class_level: 3, equipment_mode: "starting_gold" });
+    expect(effectiveEquipmentModeForState(state)).toBe("background");
+    expect(buildEquipmentInventory(background, state)).toEqual([
+      { item_id: 10, quantity: 1, is_equipped: false },
+    ]);
     expect(resolveStartingGoldGp(state)).toBe(0);
+  });
+
+  it("usa nível total para modo e ouro de multiclasse", () => {
+    const state = gearState({
+      class_level: 1,
+      secondary_class: { class_id: 2, class_level: 4, subclass_id: null },
+      equipment_mode: "starting_gold",
+      equipment_option_key: "A",
+    });
+
+    expect(effectiveEquipmentModeForState(state)).toBe("starting_gold");
+    expect(resolveStartingGoldGp(state)).toBe(638);
   });
 });

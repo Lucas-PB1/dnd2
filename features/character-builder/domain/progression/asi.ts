@@ -7,6 +7,8 @@ import {
 import type {
   AbilityKey,
   BuilderOriginFeatChoice,
+  BuilderTraitOption,
+  BuilderTraitOptionModifier,
   CharacterBuilderData,
   CharacterBuilderState,
   TraitOptionSelection,
@@ -29,15 +31,39 @@ const ABILITY_NAME_TO_KEY: Record<string, AbilityKey> = {
 };
 
 const MAX_ABILITY_SCORE = 20;
-
 function abilityKeyFromOptionName(name: string): AbilityKey | null {
   return ABILITY_NAME_TO_KEY[name] ?? null;
 }
 
-function findTraitOptionName(
+function abilityKeyFromAffectedStat(stat: string | null | undefined): AbilityKey | null {
+  switch (stat?.toLowerCase()) {
+    case "strength":
+    case "str":
+      return "STR";
+    case "dexterity":
+    case "dex":
+      return "DEX";
+    case "constitution":
+    case "con":
+      return "CON";
+    case "intelligence":
+    case "int":
+      return "INT";
+    case "wisdom":
+    case "wis":
+      return "WIS";
+    case "charisma":
+    case "cha":
+      return "CHA";
+    default:
+      return null;
+  }
+}
+
+function findTraitOption(
   groups: BuilderOriginFeatChoice[],
   selection: TraitOptionSelection,
-): string | null {
+): BuilderTraitOption | null {
   for (const group of groups) {
     if (
       group.trait_id !== selection.trait_id ||
@@ -48,7 +74,7 @@ function findTraitOptionName(
     const option = group.options.find(
       (entry) => entry.trait_option_id === selection.trait_option_id,
     );
-    if (option) return option.name;
+    if (option) return option;
   }
   return null;
 }
@@ -64,11 +90,66 @@ function bumpAbility(
   abilities: Record<AbilityKey, number>,
   key: AbilityKey,
   delta: number,
+  maxValue = MAX_ABILITY_SCORE,
 ): Record<AbilityKey, number> {
   return {
     ...abilities,
-    [key]: Math.min(MAX_ABILITY_SCORE, abilities[key] + delta),
+    [key]: Math.min(maxValue, abilities[key] + delta),
   };
+}
+
+function modifierForSelection(
+  groups: BuilderOriginFeatChoice[],
+  selection: TraitOptionSelection,
+  choiceModeKey?: string,
+): BuilderTraitOptionModifier | null {
+  const option = findTraitOption(groups, selection);
+  if (!option?.modifiers?.length) return null;
+
+  const ability = abilityKeyFromOptionName(option.name);
+  const matchingAbility = option.modifiers.filter((modifier) => {
+    const modifierAbility = abilityKeyFromAffectedStat(modifier.affected_stat);
+    return !ability || !modifierAbility || modifierAbility === ability;
+  });
+
+  if (choiceModeKey) {
+    return (
+      matchingAbility.find(
+        (modifier) => modifier.choice_mode_key === choiceModeKey,
+      ) ?? null
+    );
+  }
+
+  return (
+    matchingAbility.find((modifier) => modifier.choice_mode_key === null) ??
+    matchingAbility[0] ??
+    null
+  );
+}
+
+function applySelectionModifier(
+  abilities: Record<AbilityKey, number>,
+  groups: BuilderOriginFeatChoice[],
+  selection: TraitOptionSelection,
+  fallbackDelta: number,
+  fallbackMax: number,
+  choiceModeKey?: string,
+): Record<AbilityKey, number> {
+  const option = findTraitOption(groups, selection);
+  const modifier = modifierForSelection(groups, selection, choiceModeKey);
+  const key =
+    abilityKeyFromAffectedStat(modifier?.affected_stat) ??
+    (option ? abilityKeyFromOptionName(option.name) : null);
+
+  if (!key) return abilities;
+
+  const delta =
+    modifier?.operation === "add" || !modifier
+      ? (modifier?.modifier_value ?? fallbackDelta)
+      : fallbackDelta;
+  const maxValue = modifier?.max_value ?? fallbackMax;
+
+  return bumpAbility(abilities, key, delta, maxValue);
 }
 
 export function applyAsiTraitOptions(
@@ -90,31 +171,46 @@ export function applyAsiTraitOptions(
     ] as const) {
       const selection = selectionForGroup(selections, groupName);
       if (!selection) continue;
-      const name = findTraitOptionName(groups, selection);
-      const key = name ? abilityKeyFromOptionName(name) : null;
-      if (key) result = bumpAbility(result, key, 1);
+      result = applySelectionModifier(
+        result,
+        groups,
+        selection,
+        1,
+        MAX_ABILITY_SCORE,
+        "triple_plus_one",
+      );
     }
     return result;
   }
 
   if (primary && secondary) {
-    const primaryName = findTraitOptionName(groups, primary);
-    const secondaryName = findTraitOptionName(groups, secondary);
-    const primaryKey = primaryName
-      ? abilityKeyFromOptionName(primaryName)
-      : null;
-    const secondaryKey = secondaryName
-      ? abilityKeyFromOptionName(secondaryName)
-      : null;
-    if (primaryKey) result = bumpAbility(result, primaryKey, 2);
-    if (secondaryKey) result = bumpAbility(result, secondaryKey, 1);
+    result = applySelectionModifier(
+      result,
+      groups,
+      primary,
+      2,
+      MAX_ABILITY_SCORE,
+      "plus_two_plus_one",
+    );
+    result = applySelectionModifier(
+      result,
+      groups,
+      secondary,
+      1,
+      MAX_ABILITY_SCORE,
+      "plus_two_plus_one",
+    );
   }
 
   for (const selection of selections) {
     if (selection.option_group !== "Ability Score") continue;
-    const name = findTraitOptionName(groups, selection);
-    const key = name ? abilityKeyFromOptionName(name) : null;
-    if (key) result = bumpAbility(result, key, 1);
+    result = applySelectionModifier(
+      result,
+      groups,
+      selection,
+      1,
+      MAX_ABILITY_SCORE,
+    );
   }
 
   return result;

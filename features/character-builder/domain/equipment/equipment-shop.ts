@@ -2,20 +2,13 @@ import {
   magicItemsAllowedAtLevel,
   maxMagicItemCostGp,
 } from "@/features/character-builder/domain/equipment/magic-items-by-level";
+import { effectiveEquipmentModeForState } from "@/features/character-builder/domain/equipment/equipment-mode";
 import { startingGoldGpForLevel } from "@/features/character-builder/domain/equipment/starting-gold";
 import { totalCharacterLevel } from "@/features/character-builder/domain/multiclass/multiclass";
-import { clampClassLevel } from "@/features/character-builder/domain/progression/levels";
 import type {
   CharacterBuilderState,
-  EquipmentMode,
   ShopPurchase,
 } from "@/features/character-builder/types/builder.types";
-
-function effectiveMode(state: CharacterBuilderState): EquipmentMode {
-  return clampClassLevel(state.class_level) >= 2
-    ? state.equipment_mode
-    : "background";
-}
 
 export type ShopItemRow = {
   id: number;
@@ -25,7 +18,7 @@ export type ShopItemRow = {
 };
 
 export function shopBudgetGp(state: CharacterBuilderState): number {
-  const mode = effectiveMode(state);
+  const mode = effectiveEquipmentModeForState(state);
   if (mode !== "starting_gold" && mode !== "campaign_shop") {
     return 0;
   }

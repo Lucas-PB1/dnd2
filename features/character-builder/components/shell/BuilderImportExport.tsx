@@ -36,19 +36,26 @@ export function BuilderImportExport({ state, onImport }: BuilderImportExportProp
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
-      <Button type="button" variant="ghost" size="md" onClick={handleExport}>
+    <div className="flex items-center gap-1">
+      <Button
+        type="button"
+        variant="ghost"
+        size="md"
+        className="w-auto!"
+        onClick={handleExport}
+      >
         <Download className="size-4" aria-hidden />
-        Exportar build
+        <span className="hidden sm:inline">Exportar</span>
       </Button>
       <Button
         type="button"
         variant="ghost"
         size="md"
+        className="w-auto!"
         onClick={() => fileInputRef.current?.click()}
       >
         <Upload className="size-4" aria-hidden />
-        Importar build
+        <span className="hidden sm:inline">Importar</span>
       </Button>
       <input
         ref={fileInputRef}

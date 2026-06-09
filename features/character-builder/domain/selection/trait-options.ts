@@ -199,27 +199,6 @@ export function visibleTraitOptionsForSkillGroup(
   });
 }
 
-const ABILITY_NAME_TO_KEY: Record<string, AbilityKey> = {
-  STR: "STR",
-  DEX: "DEX",
-  CON: "CON",
-  INT: "INT",
-  WIS: "WIS",
-  CHA: "CHA",
-  Strength: "STR",
-  Dexterity: "DEX",
-  Constitution: "CON",
-  Intelligence: "INT",
-  Wisdom: "WIS",
-  Charisma: "CHA",
-  Força: "STR",
-  Destreza: "DEX",
-  Constituição: "CON",
-  Inteligência: "INT",
-  Sabedoria: "WIS",
-  Carisma: "CHA",
-};
-
 export function usedBackgroundAbilityKeys(
   state: CharacterBuilderState,
 ): AbilityKey[] {
@@ -242,7 +221,6 @@ export function isAbilityScoreOptionGroup(optionGroup: string): boolean {
 export function visibleTraitOptionsForAbilityGroup(
   options: BuilderTraitOption[],
   group: { trait_id: number; option_group: string },
-  state: CharacterBuilderState,
   allSelections: TraitOptionSelection[],
 ): BuilderTraitOption[] {
   const filtered = visibleTraitOptionsForGroup(options, group, allSelections);
@@ -251,21 +229,7 @@ export function visibleTraitOptionsForAbilityGroup(
     return filtered;
   }
 
-  const usedAbilities = new Set(usedBackgroundAbilityKeys(state));
-  const selectedInGroup = allSelections
-    .filter(
-      (entry) =>
-        entry.trait_id === group.trait_id &&
-        entry.option_group === group.option_group,
-    )
-    .map((entry) => entry.trait_option_id);
-
-  return filtered.filter((option) => {
-    if (selectedInGroup.includes(option.trait_option_id)) return true;
-    const abilityKey = ABILITY_NAME_TO_KEY[option.name];
-    if (!abilityKey) return true;
-    return !usedAbilities.has(abilityKey);
-  });
+  return filtered;
 }
 
 export function visibleTraitOptions(
@@ -285,7 +249,6 @@ export function visibleTraitOptions(
   return visibleTraitOptionsForAbilityGroup(
     withSkills,
     group,
-    state,
     allSelections,
   );
 }

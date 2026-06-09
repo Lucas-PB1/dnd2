@@ -148,23 +148,67 @@ export function setHumanOriginFeat(
 
 export { toggleFeatSpell };
 
-export function setBackgroundTool(
+function sameToolGroup(
+  entry: ToolProficiencySelection,
+  next: ToolProficiencySelection,
+): boolean {
+  return (
+    entry.source_type === next.source_type &&
+    entry.source_id === next.source_id &&
+    (entry.option_group ?? "default") === (next.option_group ?? "default")
+  );
+}
+
+function toggleToolSelection(
+  selections: ToolProficiencySelection[],
+  next: ToolProficiencySelection,
+  max: number,
+): ToolProficiencySelection[] {
+  const selected = selections.some(
+    (entry) => sameToolGroup(entry, next) && entry.tool_id === next.tool_id,
+  );
+
+  if (selected) {
+    return selections.filter(
+      (entry) => !(sameToolGroup(entry, next) && entry.tool_id === next.tool_id),
+    );
+  }
+
+  const selectedInGroup = selections.filter((entry) =>
+    sameToolGroup(entry, next),
+  );
+  if (selectedInGroup.length >= max) return selections;
+
+  return [...selections, next];
+}
+
+export function toggleBackgroundTool(
   state: CharacterBuilderState,
   tool: ToolProficiencySelection,
+  max: number,
 ): CharacterBuilderState {
   return {
     ...state,
-    background_tool_selections: [tool],
+    background_tool_selections: toggleToolSelection(
+      state.background_tool_selections,
+      tool,
+      max,
+    ),
   };
 }
 
-export function setClassTool(
+export function toggleClassTool(
   state: CharacterBuilderState,
   tool: ToolProficiencySelection,
+  max: number,
 ): CharacterBuilderState {
   return {
     ...state,
-    class_tool_selections: [tool],
+    class_tool_selections: toggleToolSelection(
+      state.class_tool_selections,
+      tool,
+      max,
+    ),
   };
 }
 

@@ -2,7 +2,7 @@ import { Surface } from "@/components/ui/Surface";
 import type { CharacterTraitEntry } from "@/features/character-sheet/domain/sheet-display";
 import {
   formatTraitLevel,
-  groupTraitsBySource,
+  groupAllTraitsBySource,
 } from "@/features/character-sheet/domain/sheet-display";
 
 type CharacterTraitsSectionProps = {
@@ -10,19 +10,16 @@ type CharacterTraitsSectionProps = {
 };
 
 export function CharacterTraitsSection({ traits }: CharacterTraitsSectionProps) {
-  const groups = groupTraitsBySource(traits);
+  const groups = groupAllTraitsBySource(traits);
   if (groups.length === 0) return null;
 
   return (
     <Surface className="p-6">
-      <h2 className="text-sm font-medium text-foreground">Traços de classe</h2>
-      <p className="mt-1 text-xs text-muted">
-        Features passivas até o nível atual (classe e subclasse).
-      </p>
+      <h2 className="text-sm font-medium text-foreground">Traços e features</h2>
       <div className="mt-4 space-y-4">
         {groups.map((group) => (
           <section key={group.source}>
-            <h3 className="text-xs font-medium uppercase tracking-wide text-muted-subtle">
+            <h3 className="text-xs font-medium text-muted-subtle">
               {group.source}
             </h3>
             <ul className="mt-2 space-y-1.5">
@@ -30,7 +27,7 @@ export function CharacterTraitsSection({ traits }: CharacterTraitsSectionProps) 
                 const levelLabel = formatTraitLevel(entry.level_required);
                 return (
                   <li
-                    key={`${entry.source_type}:${entry.trait_id}`}
+                    key={`${entry.source_type}:${entry.source_name}:${entry.trait_id}`}
                     className="flex items-baseline justify-between gap-3 text-sm"
                   >
                     <span className="text-foreground">{entry.trait_name}</span>

@@ -8,7 +8,6 @@ import type {
 } from "@/features/character-builder/types/builder.types";
 import { computePreviewAbilities } from "@/features/character-builder/domain/state/abilities";
 import {
-  ASI_FEAT_NAME,
   asiFeat,
   featsForProgressionSlot,
   progressionFeatLevelsForClass,
@@ -139,11 +138,7 @@ export function ChoicesProgressionFeatsSection({
               <TraitOptionGroupSection
                 key={`${slot.at_level}-${group.trait_id}-${group.option_group}`}
                 sectionKey={`${slot.at_level}-${group.trait_id}-${group.option_group}`}
-                title={
-                  slot.kind === "asi"
-                    ? `${ASI_FEAT_NAME}: ${group.trait_name}`
-                    : `${activeFeat.name}: ${group.trait_name}`
-                }
+                title={group.trait_name}
                 traitDescription={group.trait_description}
                 group={group}
                 selections={traitSelections}

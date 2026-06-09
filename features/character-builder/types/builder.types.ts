@@ -29,12 +29,21 @@ export type BuilderToolOption = {
   category: string | null;
 };
 
+export type BuilderTraitOptionModifier = {
+  choice_mode_key: string | null;
+  affected_stat: string | null;
+  operation: string;
+  modifier_value: number;
+  max_value: number | null;
+};
+
 export type BuilderTraitOption = {
   trait_option_id: number;
   name: string;
   description: string | null;
   option_group: string;
   skill_id?: number | null;
+  modifiers?: BuilderTraitOptionModifier[];
 };
 
 export type BuilderTraitChoiceGroup = {
@@ -217,6 +226,7 @@ export type BuilderOriginFeatChoice = {
   trait_description: string | null;
   option_group: string;
   choice_count: number;
+  is_required?: boolean;
   options: BuilderTraitOption[];
 };
 
@@ -354,6 +364,7 @@ export type ToolProficiencySelection = {
   name: string;
   source_type: string;
   source_id: number;
+  option_group?: string;
 };
 
 export type CharacterBuilderState = {

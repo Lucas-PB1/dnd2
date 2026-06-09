@@ -49,9 +49,11 @@ export function ChoicesGearTab({
   onChange,
   background,
 }: ChoicesGearTabProps) {
-  const showModeToggle = supportsEquipmentModeToggle(state.class_level);
-  const mode = effectiveEquipmentMode(state.class_level, state.equipment_mode);
-  const startingGoldPreview = formatStartingGoldPreview(totalCharacterLevel(state));
+  const totalLevel = totalCharacterLevel(state);
+  const showModeToggle = supportsEquipmentModeToggle(totalLevel);
+  const mode = effectiveEquipmentMode(totalLevel, state.equipment_mode);
+  const hasStartingGoldBonus = startingGoldHasBonus(totalLevel);
+  const startingGoldPreview = formatStartingGoldPreview(totalLevel);
   const startingGoldGp = resolveStartingGoldGp(state);
 
   return (
@@ -71,18 +73,19 @@ export function ChoicesGearTab({
                 })
               }
             />
-            <ChipToggle
-              label="Simplificado — ouro PHB"
-              selected={mode === "starting_gold"}
-              onToggle={() =>
-                onChange({
-                  ...state,
-                  equipment_mode: "starting_gold",
-                  equipment_option_key: null,
-                  shop_purchases: [],
-                })
-              }
-            />
+            {hasStartingGoldBonus ? (
+              <ChipToggle
+                label="Simplificado — ouro PHB"
+                selected={mode === "starting_gold"}
+                onToggle={() =>
+                  onChange({
+                    ...state,
+                    equipment_mode: "starting_gold",
+                    shop_purchases: [],
+                  })
+                }
+              />
+            ) : null}
             <ChipToggle
               label="Campanha — loja"
               selected={mode === "campaign_shop"}
@@ -122,22 +125,15 @@ export function ChoicesGearTab({
             <span className="font-semibold">
               {startingGoldGp.toLocaleString("pt-BR")} PO
             </span>
-            {startingGoldHasBonus(state.class_level) ? " (média do dado)" : ""}
+            {hasStartingGoldBonus ? " (média do dado)" : ""}
           </p>
-          {!startingGoldHasBonus(state.class_level) ? (
-            <p className="mt-2 text-xs text-muted">
-              Neste nível não há bônus de ouro PHB; o personagem começa sem pacote de
-              equipamento do antecedente.
-            </p>
-          ) : (
-            <p className="mt-2 text-xs text-muted">
-              Sem itens do pacote do antecedente. Use a loja de campanha para equipar.
-            </p>
-          )}
+          <p className="mt-2 text-xs text-muted">
+            O pacote escolhido do antecedente também será enviado.
+          </p>
         </div>
       ) : null}
 
-      {mode === "background" ? (
+      {mode === "background" || mode === "starting_gold" ? (
         background.equipment_options.length === 0 ? (
           <p className="text-sm text-muted">
             Nenhuma opção de equipamento cadastrada.
@@ -158,7 +154,8 @@ export function ChoicesGearTab({
                 onSelect={() =>
                   onChange({
                     ...state,
-                    equipment_mode: "background",
+                    equipment_mode:
+                      mode === "starting_gold" ? "starting_gold" : "background",
                     equipment_option_key: opt.option_key,
                   })
                 }
@@ -175,8 +172,10 @@ export function ChoicesGearTab({
 
       {showModeToggle && mode === "background" && startingGoldPreview ? (
         <p className="text-xs text-muted">
-          Referência PHB (nível {state.class_level}): {startingGoldPreview}. Disponível
-          escolhendo &quot;Ouro inicial PHB&quot; acima.
+          Referência PHB (nível {totalLevel}): {startingGoldPreview}.
+          {hasStartingGoldBonus
+            ? " Disponível escolhendo \"Ouro inicial PHB\" acima."
+            : ""}
         </p>
       ) : null}
     </section>

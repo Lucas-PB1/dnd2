@@ -5,7 +5,7 @@ import type {
   BuilderTraitOption,
 } from "@/features/character-builder/types/builder.types";
 import {
-  setBackgroundTool,
+  toggleBackgroundTool,
   toggleSpeciesTraitOption,
 } from "@/features/character-builder/hooks/useCharacterBuilder";
 import { visibleWhenTaken } from "@/features/character-builder/domain/selection";
@@ -41,6 +41,15 @@ export function ChoicesTraitsTab({
         .map((opt) => {
           const categoryTools =
             data.tools_by_category[opt.tool_category ?? ""] ?? [];
+          const selectedInGroup = state.background_tool_selections
+            .filter(
+              (entry) =>
+                entry.source_type === "background" &&
+                entry.source_id === background.id &&
+                (entry.option_group ?? opt.option_group) === opt.option_group,
+            )
+            .map((entry) => entry.tool_id)
+            .filter((id): id is number => id !== null);
           return (
             <section key={opt.id}>
               <p className="text-xs font-medium text-foreground">
@@ -53,16 +62,12 @@ export function ChoicesTraitsTab({
                     (tool): tool is typeof tool & { tool_id: number } =>
                       tool.tool_id !== null,
                   ),
-                  state.background_tool_selections
-                    .map((entry) => entry.tool_id)
-                    .filter((id): id is number => id !== null),
+                  selectedInGroup,
                   classToolIds,
                   (tool) => tool.tool_id,
                 ).map((tool) => {
                   const toolId = tool.tool_id;
-                  const selected = state.background_tool_selections.some(
-                    (entry) => entry.tool_id === toolId,
-                  );
+                  const selected = selectedInGroup.includes(toolId);
                   return (
                     <ChipToggle
                       key={toolId}
@@ -70,12 +75,13 @@ export function ChoicesTraitsTab({
                       selected={selected}
                       onToggle={() =>
                         onChange(
-                          setBackgroundTool(state, {
+                          toggleBackgroundTool(state, {
                             tool_id: toolId,
                             name: tool.name,
                             source_type: "background",
                             source_id: background.id,
-                          }),
+                            option_group: opt.option_group,
+                          }, opt.choice_count),
                         )
                       }
                     />
