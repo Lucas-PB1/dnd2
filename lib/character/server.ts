@@ -19,6 +19,7 @@ import {
 import type {
   CharacterAbilityKey,
   CharacterDetail,
+  CharacterFeatSummary,
   CharacterKnownSpell,
   CharacterProficiency,
   CharacterResourceSummary,
@@ -128,6 +129,18 @@ type CharacterTraitRow = {
   source_type: string;
   source_name: string;
   level_required: number | null;
+};
+
+type CharacterFeatRow = {
+  feat_id: number;
+  source_type: string;
+  source_id: number | null;
+  selection_key: string | null;
+  notes: string | null;
+  feats:
+    | { name: string; category: string | null }
+    | { name: string; category: string | null }[]
+    | null;
 };
 
 type CharacterResourceRow = {
@@ -260,6 +273,56 @@ async function fetchPrimarySpellcasting(
   }
 
   return null;
+}
+
+async function fetchCharacterFeats(
+  admin: ReturnType<typeof createAdminClient>,
+  characterId: number,
+): Promise<CharacterFeatSummary[]> {
+  const { data, error } = await admin
+    .from("character_feats")
+    .select(
+      `
+      feat_id,
+      source_type,
+      source_id,
+      selection_key,
+      notes,
+      feats ( name, category )
+    `,
+    )
+    .eq("character_id", characterId)
+    .order("source_type")
+    .order("selection_key", { ascending: true, nullsFirst: true });
+
+  if (error) {
+    throw new ApiError(error.message, 400);
+  }
+
+  return ((data ?? []) as CharacterFeatRow[]).flatMap((row) => {
+    const feat = unwrap(row.feats);
+    if (!feat) return [];
+    return [{
+      feat_id: row.feat_id,
+      name: feat.name,
+      category: feat.category,
+      source_type: row.source_type,
+      source_id: row.source_id,
+      selection_key: row.selection_key,
+      notes: row.notes,
+    }];
+  });
+}
+
+function resolveSpellSlots(
+  adminSlots: CharacterSpellSlot[],
+  rollContextSlots: CharacterSpellSlot[],
+  hasAuth: boolean,
+): CharacterSpellSlot[] {
+  if (hasAuth && rollContextSlots.length > 0) {
+    return rollContextSlots;
+  }
+  return adminSlots;
 }
 
 async function fetchCharacterTraits(
@@ -494,13 +557,14 @@ export async function getCharacterForUser(
   if (!data) return null;
 
   const [
-    spell_slots,
+    adminSpellSlots,
     spellcasting,
     traits,
     resources,
     skillCatalog,
     proficiencies,
     known_spells,
+    character_feats,
     sheet,
     rollContext,
   ] = await Promise.all([
@@ -511,9 +575,15 @@ export async function getCharacterForUser(
     fetchSkillCatalog(admin),
     fetchCharacterProficiencies(admin, characterId),
     fetchCharacterKnownSpells(admin, characterId),
+    fetchCharacterFeats(admin, characterId),
     fetchCharacterSheetRpc(authClient, characterId),
     fetchCharacterRollContext(authClient, characterId),
   ]);
+  const spell_slots = resolveSpellSlots(
+    adminSpellSlots,
+    rollContext.spell_slots,
+    authClient != null,
+  );
   const skills = mergeSkillCatalog(
     skillCatalog,
     rollContext.skills,
@@ -541,6 +611,7 @@ export async function getCharacterForUser(
     stat_modifiers: sheet.stat_modifiers,
     traits,
     resources,
+    character_feats,
   };
 }
 

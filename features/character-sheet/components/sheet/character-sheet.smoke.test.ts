@@ -8,7 +8,13 @@ import { CharacterInventorySection } from "@/features/character-sheet/components
 import { CharacterProficienciesSection } from "@/features/character-sheet/components/sheet/CharacterProficienciesSection";
 import { CharacterSpellsSection } from "@/features/character-sheet/components/sheet/CharacterSpellsSection";
 import { CharacterVitalsSection } from "@/features/character-sheet/components/sheet/CharacterVitalsSection";
-import { fullCharacterDetailFixture } from "@/features/character-sheet/test-fixtures/character-detail.fixture";
+import { CharacterFeatsSection } from "@/features/character-sheet/components/sheet/CharacterFeatsSection";
+import { CharacterTraitOptionsSection } from "@/features/character-sheet/components/sheet/CharacterTraitOptionsSection";
+import { CharacterTraitsSection } from "@/features/character-sheet/components/sheet/CharacterTraitsSection";
+import {
+  fullCharacterDetailFixture,
+  wizardCharacterFixture,
+} from "@/features/character-sheet/test-fixtures/character-detail.fixture";
 
 vi.mock("@/components/motion", () => ({
   FadeIn: ({ children }: { children?: React.ReactNode }) => children ?? null,
@@ -64,6 +70,23 @@ describe("character sheet smoke", () => {
           modifiers: character.stat_modifiers,
         }),
       ),
+      renderToStaticMarkup(
+        createElement(CharacterFeatsSection, {
+          characterId: character.id,
+          feats: character.character_feats,
+        }),
+      ),
+      renderToStaticMarkup(
+        createElement(CharacterTraitOptionsSection, {
+          options: character.trait_options,
+        }),
+      ),
+      renderToStaticMarkup(
+        createElement(CharacterTraitsSection, {
+          characterId: character.id,
+          traits: character.traits,
+        }),
+      ),
     ].join("\n");
 
     expect(html).toContain("Combate");
@@ -73,7 +96,25 @@ describe("character sheet smoke", () => {
     expect(html).toContain("Inventário");
     expect(html).toContain("Proficiências");
     expect(html).toContain("Efeitos ativos");
+    expect(html).toContain("Feats");
+    expect(html).toContain("Escolhas de traço");
+    expect(html).toContain("Traços e features");
+    expect(html).toContain("Resistência a Fire");
+    expect(html).toContain("Choose one skill proficiency.");
+    expect(html).not.toContain("choice_count");
     expect(html).not.toContain("Em breve");
+  });
+
+  it("renderiza seções de magias agrupadas para Mago", () => {
+    const wizard = wizardCharacterFixture();
+    const html = renderToStaticMarkup(
+      createElement(CharacterSpellsSection, { character: wizard }),
+    );
+
+    expect(html).toContain("Truques");
+    expect(html).toContain("Preparadas");
+    expect(html).toContain("Grimório");
+    expect(html).toContain("2/5 preparadas");
   });
 });
 

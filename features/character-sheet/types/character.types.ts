@@ -210,6 +210,16 @@ export type CharacterTraitSummary = {
   level_required: number | null;
 };
 
+export type CharacterFeatSummary = {
+  feat_id: number;
+  name: string;
+  category: string | null;
+  source_type: string;
+  source_id: number | null;
+  selection_key: string | null;
+  notes: string | null;
+};
+
 export type CharacterResourceSummary = {
   trait_id: number | null;
   resource_key: string | null;
@@ -239,6 +249,7 @@ export type CharacterDetail = CharacterSummary & {
   stat_modifiers: CharacterStatModifier[];
   traits: CharacterTraitSummary[];
   resources: CharacterResourceSummary[];
+  character_feats: CharacterFeatSummary[];
 };
 
 export type CreateCharacterPayload = {

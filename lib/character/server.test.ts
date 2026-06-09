@@ -124,6 +124,19 @@ function setupAdminMocks() {
             },
           ]),
         );
+      case "character_feats":
+        return chain(() =>
+          queryResult([
+            {
+              feat_id: 5,
+              source_type: "background",
+              source_id: 2,
+              selection_key: null,
+              notes: null,
+              feats: { name: "Tough", category: "Origin" },
+            },
+          ]),
+        );
       default:
         return chain(() => queryResult([]));
     }
@@ -183,6 +196,14 @@ describe("getCharacterForUser", () => {
                 attack_bonus: 6,
               },
             ],
+            spell_slots: [
+              {
+                slot_level: 1,
+                max_slots: 4,
+                used_slots: 2,
+                remaining: 2,
+              },
+            ],
           });
         }
         return queryResult(null);
@@ -208,7 +229,10 @@ describe("getCharacterForUser", () => {
     expect(character?.traits[0]?.trait_name).toBe("Second Wind");
     expect(character?.resources[0]?.name).toBe("Second Wind");
     expect(character?.known_spells[0]?.name).toBe("Shield");
-    expect(character?.spell_slots).toHaveLength(1);
+    expect(character?.spell_slots).toEqual([
+      { slot_level: 1, max_slots: 4, used_slots: 2 },
+    ]);
+    expect(character?.character_feats[0]?.name).toBe("Tough");
   });
 
   it("retorna arrays vazios de sheet/roll context sem auth client", async () => {

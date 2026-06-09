@@ -13,11 +13,13 @@ import {
 type CharacterSpellSlotsSectionProps = {
   spellcasting: CharacterSpellcastingInfo;
   slots: CharacterSpellSlot[];
+  multiclassNote?: string | null;
 };
 
 export function CharacterSpellSlotsSection({
   spellcasting,
   slots,
+  multiclassNote,
 }: CharacterSpellSlotsSectionProps) {
   if (slots.length === 0) return null;
 
@@ -36,6 +38,9 @@ export function CharacterSpellSlotsSection({
       <p className="mt-1 text-xs text-muted">
         {spellcasting.class_name} · {spellSlotsRecoveryHint(spellcasting)}
       </p>
+      {multiclassNote ? (
+        <p className="mt-2 text-xs text-muted-subtle">{multiclassNote}</p>
+      ) : null}
       <ul className="mt-4 space-y-2">
         {slots.map((slot) => (
           <li

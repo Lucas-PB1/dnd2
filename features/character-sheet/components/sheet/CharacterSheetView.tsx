@@ -16,6 +16,8 @@ import { CharacterSpellsSection } from "@/features/character-sheet/components/sh
 import { CharacterProficienciesSection } from "@/features/character-sheet/components/sheet/CharacterProficienciesSection";
 import { CharacterInventorySection } from "@/features/character-sheet/components/sheet/CharacterInventorySection";
 import { CharacterEffectsSection } from "@/features/character-sheet/components/sheet/CharacterEffectsSection";
+import { CharacterFeatsSection } from "@/features/character-sheet/components/sheet/CharacterFeatsSection";
+import { CharacterTraitOptionsSection } from "@/features/character-sheet/components/sheet/CharacterTraitOptionsSection";
 import { formatProficiencyBonus } from "@/features/character-sheet/domain/sheet-display";
 import type { CharacterDetail } from "@/features/character-sheet/types/character.types";
 
@@ -30,8 +32,24 @@ function formatClasses(character: CharacterDetail): string {
     .join(", ");
 }
 
+function formatFeatsSummary(character: CharacterDetail): string | null {
+  if (character.character_feats.length > 0) {
+    return character.character_feats.map((feat) => feat.name).join(", ");
+  }
+  return character.sheet_summary?.feats ?? null;
+}
+
+function multiclassSpellNote(character: CharacterDetail): string | null {
+  if (character.spellcasting_entries.length <= 1) return null;
+  const names = character.spellcasting_entries
+    .map((entry) => `${entry.class_name} ${entry.class_level}`)
+    .join(", ");
+  return `Multiclasse: slots combinados (${names}).`;
+}
+
 export function CharacterSheetView({ character }: CharacterSheetViewProps) {
   const summary = character.sheet_summary;
+  const featsSummary = formatFeatsSummary(character);
 
   return (
     <article aria-labelledby="character-detail-heading">
@@ -88,10 +106,10 @@ export function CharacterSheetView({ character }: CharacterSheetViewProps) {
                 <dd className="mt-1 text-foreground">{summary.size}</dd>
               </div>
             ) : null}
-            {summary?.feats ? (
+            {featsSummary ? (
               <div className="sm:col-span-2">
                 <dt className="text-xs text-muted-subtle">Feats</dt>
-                <dd className="mt-1 text-foreground">{summary.feats}</dd>
+                <dd className="mt-1 text-foreground">{featsSummary}</dd>
               </div>
             ) : null}
             {character.starting_gold_gp > 0 ? (
@@ -113,7 +131,10 @@ export function CharacterSheetView({ character }: CharacterSheetViewProps) {
             <CharacterCombatSection character={character} />
             <CharacterSpellsSection character={character} />
             <CharacterInventorySection inventory={character.inventory} />
-            <CharacterTraitsSection traits={character.traits} />
+            <CharacterTraitsSection
+              characterId={character.id}
+              traits={character.traits}
+            />
           </div>
 
           <aside className="space-y-6">
@@ -123,6 +144,7 @@ export function CharacterSheetView({ character }: CharacterSheetViewProps) {
               <CharacterSpellSlotsSection
                 spellcasting={character.spellcasting}
                 slots={character.spell_slots}
+                multiclassNote={multiclassSpellNote(character)}
               />
             ) : null}
 
@@ -131,9 +153,14 @@ export function CharacterSheetView({ character }: CharacterSheetViewProps) {
             ) : null}
 
             <CharacterProficienciesSection character={character} />
+            <CharacterTraitOptionsSection options={character.trait_options} />
             <CharacterEffectsSection
               effects={character.active_effects}
               modifiers={character.stat_modifiers}
+            />
+            <CharacterFeatsSection
+              characterId={character.id}
+              feats={character.character_feats}
             />
 
             {character.is_owner ? (

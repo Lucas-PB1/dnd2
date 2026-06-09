@@ -1,4 +1,5 @@
 import { Surface } from "@/components/ui/Surface";
+import { formatActiveEffects } from "@/features/character-sheet/domain/sheet-sections/effects-display";
 import { formatProficiencyBonus } from "@/features/character-sheet/domain/sheet-display";
 import type {
   CharacterActiveEffect,
@@ -10,85 +11,57 @@ type CharacterEffectsSectionProps = {
   modifiers: CharacterStatModifier[];
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function formatObject(value: unknown): string | null {
-  if (!isRecord(value)) return null;
-
-  const parts = Object.entries(value).flatMap(([key, entry]) => {
-    if (entry == null || entry === "") return [];
-    if (
-      typeof entry !== "string" &&
-      typeof entry !== "number" &&
-      typeof entry !== "boolean"
-    ) {
-      return [];
-    }
-    return [`${key}: ${entry}`];
-  });
-
-  return parts.length > 0 ? parts.join(" · ") : null;
-}
-
-function compactEntries(values: unknown[]): string[] {
-  return values.flatMap((entry) => {
-    const formatted = formatObject(entry);
-    return formatted ? [formatted] : [];
-  });
-}
-
-function effectLines(effect: CharacterActiveEffect): string[] {
-  return [
-    ...compactEntries(effect.modifiers),
-    ...compactEntries(effect.damage_adjustments),
-    ...compactEntries(effect.statuses),
-    ...compactEntries(effect.condition_adjustments),
-    ...compactEntries(effect.proficiencies),
-  ];
-}
+const KIND_LABELS = {
+  modifier: "Modificador",
+  damage: "Dano",
+  status: "Status",
+  condition: "Condição",
+  proficiency: "Proficiência",
+  raw: "Detalhe",
+} as const;
 
 export function CharacterEffectsSection({
   effects,
   modifiers,
 }: CharacterEffectsSectionProps) {
-  const activeEffects = effects.filter((entry) => entry.is_active);
+  const formattedEffects = formatActiveEffects(effects);
   const activeModifiers = modifiers.filter((entry) => entry.is_active);
 
-  if (activeEffects.length === 0 && activeModifiers.length === 0) return null;
+  if (formattedEffects.length === 0 && activeModifiers.length === 0) return null;
 
   return (
     <Surface className="p-5">
       <h2 className="text-sm font-medium text-foreground">Efeitos ativos</h2>
 
-      {activeEffects.length > 0 ? (
+      {formattedEffects.length > 0 ? (
         <div className="mt-4 space-y-2">
-          {activeEffects.map((effect) => {
-            const lines = effectLines(effect);
-            return (
-              <div
-                key={`${effect.source_type}:${effect.source_name}:${effect.effect_name}`}
-                className="rounded-md border border-border/70 bg-surface/35 px-3 py-3"
-              >
-                <p className="text-sm font-medium text-foreground">
-                  {effect.effect_name}
-                </p>
-                <p className="mt-0.5 text-xs text-muted-subtle">
-                  {[effect.source_name, effect.duration_text]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
-                {lines.length > 0 ? (
-                  <ul className="mt-2 space-y-1 text-xs text-muted">
-                    {lines.slice(0, 4).map((line) => (
-                      <li key={line}>{line}</li>
-                    ))}
-                  </ul>
-                ) : null}
-              </div>
-            );
-          })}
+          {formattedEffects.map(({ effect, lines }) => (
+            <div
+              key={`${effect.source_type}:${effect.source_name}:${effect.effect_name}`}
+              className="rounded-md border border-border/70 bg-surface/35 px-3 py-3"
+            >
+              <p className="text-sm font-medium text-foreground">
+                {effect.effect_name}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-subtle">
+                {[effect.source_name, effect.duration_text]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+              {lines.length > 0 ? (
+                <ul className="mt-2 space-y-1 text-xs text-muted">
+                  {lines.map((line) => (
+                    <li key={`${effect.effect_name}:${line.text}`}>
+                      <span className="text-muted-subtle">
+                        {KIND_LABELS[line.kind]}:
+                      </span>{" "}
+                      {line.text}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ))}
         </div>
       ) : null}
 

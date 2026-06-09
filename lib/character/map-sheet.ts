@@ -7,6 +7,7 @@ import type {
   CharacterSheetSummary,
   CharacterSkillCheck,
   CharacterSpellcastingBlock,
+  CharacterSpellSlot,
   CharacterStatModifier,
   CharacterTraitOptionSummary,
   CharacterTraitSpellChoice,
@@ -33,6 +34,7 @@ export type RollContextData = {
   skills: CharacterSkillCheck[];
   spellcasting_entries: CharacterSpellcastingBlock[];
   weapons: CharacterWeaponAttack[];
+  spell_slots: CharacterSpellSlot[];
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -99,6 +101,17 @@ export function emptyRollContextData(): RollContextData {
     skills: [],
     spellcasting_entries: [],
     weapons: [],
+    spell_slots: [],
+  };
+}
+
+export function mapSpellSlot(value: unknown): CharacterSpellSlot | null {
+  if (!isRecord(value)) return null;
+
+  return {
+    slot_level: asNumber(value.slot_level),
+    max_slots: asNumber(value.max_slots),
+    used_slots: asNumber(value.used_slots),
   };
 }
 
@@ -392,6 +405,10 @@ export function mapRollContextResponse(data: unknown): RollContextData {
     weapons: asArray(data.weapons).flatMap((entry) => {
       const weapon = mapWeaponAttack(entry);
       return weapon ? [weapon] : [];
+    }),
+    spell_slots: asArray(data.spell_slots).flatMap((entry) => {
+      const slot = mapSpellSlot(entry);
+      return slot && slot.max_slots > 0 ? [slot] : [];
     }),
   };
 }

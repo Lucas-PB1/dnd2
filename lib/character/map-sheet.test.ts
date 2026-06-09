@@ -10,6 +10,7 @@ import {
   mapSkill,
   mapSpellcastingBlock,
   mapStatModifier,
+  mapSpellSlot,
   mapWeaponAttack,
   mergeSkillCatalog,
 } from "@/lib/character/map-sheet";
@@ -188,6 +189,25 @@ describe("map-sheet mappers", () => {
       name: "Rapier",
       is_equipped: true,
       attack_bonus: 6,
+    });
+  });
+
+  it("mapeia spell_slots do roll context ignorando slots com max zero", () => {
+    const roll = mapRollContextResponse({
+      abilities: {},
+      spell_slots: [
+        { slot_level: 1, max_slots: 4, used_slots: 1, remaining: 3 },
+        { slot_level: 2, max_slots: 0, used_slots: 0, remaining: 0 },
+      ],
+    });
+
+    expect(roll.spell_slots).toEqual([
+      { slot_level: 1, max_slots: 4, used_slots: 1 },
+    ]);
+    expect(mapSpellSlot({ slot_level: 3, max_slots: 2, used_slots: 0 })).toEqual({
+      slot_level: 3,
+      max_slots: 2,
+      used_slots: 0,
     });
   });
 
