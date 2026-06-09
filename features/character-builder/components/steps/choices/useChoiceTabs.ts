@@ -20,18 +20,10 @@ import {
 } from "@/features/character-builder/domain/spells/feat-spells";
 import { equipmentChoiceLabel } from "@/features/character-builder/domain/equipment/equipment-mode";
 import {
-  findLockedOriginFeatSelection,
-  getVisibleOriginFeatChoices,
-} from "@/features/character-builder/domain/origin-feat";
-import {
   classRequiresOptionalFeatureSelection,
   selectionsForOptionalGroup,
   totalOptionalFeatureChoicesRequired,
 } from "@/features/character-builder/domain/optional-features";
-import {
-  progressionFeatLevelsForClass,
-  syncProgressionFeatSlots,
-} from "@/features/character-builder/domain/progression/feats";
 import type { ChoiceTabItem } from "./types";
 
 type UseChoiceTabsInput = {
@@ -60,13 +52,6 @@ export function useChoiceTabs({
         .filter((g) => g.is_required)
         .map((group) => ({ trait, group })),
     );
-    const lockedOriginFeat = findLockedOriginFeatSelection(background);
-    const visibleOriginFeatChoices = getVisibleOriginFeatChoices(background);
-    const hasFeats =
-      species.name === "Human" ||
-      lockedOriginFeat !== null ||
-      visibleOriginFeatChoices.length > 0 ||
-      progressionFeatLevelsForClass(state.class_level).length > 0;
     const optionalGroups = cls.optional_feature_groups ?? [];
     const hasOptional = classRequiresOptionalFeatureSelection(optionalGroups);
     const optionalRequired = totalOptionalFeatureChoicesRequired(optionalGroups);
@@ -156,20 +141,6 @@ export function useChoiceTabs({
       background.tool_proficiency_options.some((o) => !o.tool_id)
     ) {
       items.push({ id: "traits", label: "Traços" });
-    }
-
-    if (hasFeats) {
-      const progressionSlots = syncProgressionFeatSlots(state);
-      const progressionFilled = progressionSlots.filter((slot) => slot.kind).length;
-      const progressionTotal = progressionSlots.length;
-      items.push({
-        id: "feats",
-        label: "Feats",
-        badge:
-          progressionTotal > 0
-            ? `Prog. ${progressionFilled}/${progressionTotal}`
-            : undefined,
-      });
     }
 
     if (hasGear) {

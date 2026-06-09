@@ -52,7 +52,7 @@ export function ChoicesProgressionFeatsSection({
   const asi = asiFeat(data);
 
   return (
-    <section className="space-y-4 border-b border-border pb-4">
+    <section className="space-y-4">
       <div>
         <p className="text-sm font-medium text-foreground">
           Feats de progressão

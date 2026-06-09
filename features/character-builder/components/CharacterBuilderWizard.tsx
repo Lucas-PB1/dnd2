@@ -12,6 +12,7 @@ import { StepSpecies } from "@/features/character-builder/components/steps/StepS
 import { StepBackground } from "@/features/character-builder/components/steps/StepBackground";
 import { StepClass } from "@/features/character-builder/components/steps/StepClass";
 import { StepChoices } from "@/features/character-builder/components/steps/StepChoices";
+import { StepFeats } from "@/features/character-builder/components/steps/StepFeats";
 import { StepDetails } from "@/features/character-builder/components/steps/StepDetails";
 import {
   BUILDER_STEPS,
@@ -33,6 +34,7 @@ import {
 import { applyLockedOriginFeatToState } from "@/features/character-builder/domain/origin-feat";
 import { clampClassLevel } from "@/features/character-builder/domain/progression/levels";
 import { totalCharacterLevel } from "@/features/character-builder/domain/multiclass/multiclass";
+import { requiresFeatStepContent } from "@/features/character-builder/domain/feats/feat-step";
 
 export function CharacterBuilderWizard() {
   const router = useRouter();
@@ -145,7 +147,37 @@ export function CharacterBuilderWizard() {
   );
 
   const needsCatalog = state.step >= 1 && state.step <= 3;
-  const needsDetails = state.step === 4;
+  const needsDetails = state.step === 4 || state.step === 5;
+
+  const nextStepAfter = (
+    fromStep: number,
+    catalog: CharacterBuilderData | null,
+    builderState: CharacterBuilderState,
+  ): number => {
+    if (
+      fromStep === 4 &&
+      catalog &&
+      !requiresFeatStepContent(catalog, builderState)
+    ) {
+      return 6;
+    }
+    return Math.min(fromStep + 1, BUILDER_STEPS.length - 1);
+  };
+
+  const previousStepBefore = (
+    fromStep: number,
+    catalog: CharacterBuilderData | null,
+    builderState: CharacterBuilderState,
+  ): number => {
+    if (
+      fromStep === 6 &&
+      catalog &&
+      !requiresFeatStepContent(catalog, builderState)
+    ) {
+      return 4;
+    }
+    return Math.max(fromStep - 1, 0);
+  };
 
   const ensureSummary = async (): Promise<CharacterBuilderSummary | null> => {
     const level = clampClassLevel(state.class_level);
@@ -213,13 +245,18 @@ export function CharacterBuilderWizard() {
     setStepError(null);
     setState((prev) => ({
       ...prev,
-      step: Math.min(prev.step + 1, BUILDER_STEPS.length - 1),
+      step: nextStepAfter(prev.step, catalog, prev),
     }));
   };
 
   const goBack = () => {
+    const catalog =
+      data ?? (summary ? mergeBuilderCatalog(summary, details) : null);
     setStepError(null);
-    setState((prev) => ({ ...prev, step: Math.max(prev.step - 1, 0) }));
+    setState((prev) => ({
+      ...prev,
+      step: previousStepBefore(prev.step, catalog, prev),
+    }));
   };
 
   const goToStep = (step: number) => {
@@ -231,7 +268,11 @@ export function CharacterBuilderWizard() {
   const handleSubmit = async () => {
     const catalog =
       data ?? (summary ? mergeBuilderCatalog(summary, details) : null);
-    const error = validateBuilderStep(catalog, state, 5);
+    const error = validateBuilderStep(
+      catalog,
+      state,
+      BUILDER_STEPS.length - 1,
+    );
     if (error) {
       setStepError(error);
       return;
@@ -336,6 +377,22 @@ export function CharacterBuilderWizard() {
           />
         );
       case 5:
+        if (stepBusy || !data?.details_loaded) {
+          return (
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full max-w-sm" />
+              <SkeletonText lines={4} />
+            </div>
+          );
+        }
+        return (
+          <StepFeats
+            data={data}
+            state={state}
+            onChange={(next) => setState(next)}
+          />
+        );
+      case 6:
         if (!data) return null;
         return (
           <StepDetails data={data} state={state} onChange={patchState} />

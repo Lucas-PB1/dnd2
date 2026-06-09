@@ -5,7 +5,7 @@ import type {
   CharacterBuilderState,
 } from "@/features/character-builder/types/builder.types";
 
-export type ChoiceTab = "skills" | "optional" | "spells" | "traits" | "feats" | "gear";
+export type ChoiceTab = "skills" | "optional" | "spells" | "traits" | "gear";
 
 export type ChoiceTabItem = {
   id: ChoiceTab;

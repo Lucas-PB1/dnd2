@@ -4,6 +4,8 @@ import type {
   BuilderOriginFeat,
   BuilderSpeciesEntry,
   BuilderTraitOption,
+  CharacterBuilderData,
+  CharacterBuilderState,
 } from "@/features/character-builder/types/builder.types";
 import {
   setHumanOriginFeat,
@@ -16,12 +18,12 @@ import {
   mergeOriginFeatTraitOptions,
 } from "@/features/character-builder/domain/origin-feat";
 import { visibleHumanOriginFeats } from "@/features/character-builder/domain/selection";
-import { progressionFeatLevelsForClass } from "@/features/character-builder/domain/progression/feats";
-import type { ChoicesTabProps } from "./types";
-import { ChoicesProgressionFeatsSection } from "./ChoicesProgressionFeatsSection";
-import { TraitOptionGroupSection } from "./TraitOptionGroupSection";
+import { TraitOptionGroupSection } from "../choices/TraitOptionGroupSection";
 
-type ChoicesFeatsTabProps = ChoicesTabProps & {
+type ChoicesOriginFeatsSectionProps = {
+  data: CharacterBuilderData;
+  state: CharacterBuilderState;
+  onChange: (next: CharacterBuilderState) => void;
   species: BuilderSpeciesEntry;
   background: BuilderBackgroundEntry;
   humanFeat: BuilderOriginFeat | undefined;
@@ -29,7 +31,7 @@ type ChoicesFeatsTabProps = ChoicesTabProps & {
   onOriginFeatInfo: (featId: number, title: string) => void;
 };
 
-export function ChoicesFeatsTab({
+export function ChoicesOriginFeatsSection({
   data,
   state,
   onChange,
@@ -38,7 +40,7 @@ export function ChoicesFeatsTab({
   humanFeat,
   onOptionInfo,
   onOriginFeatInfo,
-}: ChoicesFeatsTabProps) {
+}: ChoicesOriginFeatsSectionProps) {
   const lockedOriginFeat = findLockedOriginFeatSelection(background);
   const visibleOriginFeatChoices = getVisibleOriginFeatChoices(background);
   const originFeatSelections = mergeOriginFeatTraitOptions(
@@ -47,22 +49,66 @@ export function ChoicesFeatsTab({
   );
 
   return (
-    <div className="space-y-4">
-      {progressionFeatLevelsForClass(state.class_level).length > 0 ? (
-        <ChoicesProgressionFeatsSection
+    <div className="space-y-5">
+      {background.origin_feat_name ? (
+        <header className="space-y-1">
+          <p className="text-sm font-medium text-foreground">
+            Feat de origem do antecedente
+          </p>
+          <p className="text-xs text-muted">
+            {background.name} concede{" "}
+            <span className="text-foreground">{background.origin_feat_name}</span>.
+          </p>
+        </header>
+      ) : null}
+
+      {lockedOriginFeat ? (
+        <section className="rounded-lg border border-border/80 bg-surface/25 p-3">
+          <p className="text-xs font-medium text-foreground">
+            {lockedOriginFeat.trait_name}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-subtle">
+            Escolha fixa do antecedente: {lockedOriginFeat.option_name}.
+          </p>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            <ChipToggle
+              label={lockedOriginFeat.option_name}
+              selected
+              disabled
+              size="sm"
+              onToggle={() => {}}
+            />
+          </div>
+        </section>
+      ) : null}
+
+      {visibleOriginFeatChoices.map((group) => (
+        <TraitOptionGroupSection
+          key={`${group.trait_id}-${group.option_group}`}
+          sectionKey={`${group.trait_id}-${group.option_group}`}
+          title={group.trait_name}
+          traitDescription={group.trait_description}
+          group={group}
+          selections={originFeatSelections}
           data={data}
           state={state}
           onChange={onChange}
           onOptionInfo={onOptionInfo}
+          buildNextState={(selection, max) =>
+            toggleOriginFeatTraitOption(state, data, selection, max)
+          }
         />
-      ) : null}
+      ))}
 
       {species.name === "Human" ? (
-        <section>
-          <p className="text-xs text-muted">
-            Humanos ganham um feat de origem adicional (Versátil).
-          </p>
-          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        <section className="space-y-3 border-t border-border pt-5">
+          <header className="space-y-1">
+            <p className="text-sm font-medium text-foreground">Versátil (Humano)</p>
+            <p className="text-xs text-muted">
+              Escolha um feat de origem adicional exclusivo dos humanos.
+            </p>
+          </header>
+          <div className="grid gap-2 sm:grid-cols-2">
             {visibleHumanOriginFeats(data, state).map((feat) => (
               <SelectionOptionCard
                 key={feat.id}
@@ -92,44 +138,6 @@ export function ChoicesFeatsTab({
           onOptionInfo={onOptionInfo}
           buildNextState={(selection, max) =>
             toggleHumanOriginFeatTraitOption(state, data, selection, max)
-          }
-        />
-      ))}
-
-      {lockedOriginFeat ? (
-        <section>
-          <p className="text-xs font-medium text-foreground">
-            {lockedOriginFeat.trait_name}
-          </p>
-          <p className="mt-0.5 text-xs text-muted-subtle">
-            Definido pelo antecedente {background.name}.
-          </p>
-          <div className="mt-2 grid gap-2 sm:grid-cols-2">
-            <ChipToggle
-              label={lockedOriginFeat.option_name}
-              selected
-              disabled
-              size="sm"
-              onToggle={() => {}}
-            />
-          </div>
-        </section>
-      ) : null}
-
-      {visibleOriginFeatChoices.map((group) => (
-        <TraitOptionGroupSection
-          key={`${group.trait_id}-${group.option_group}`}
-          sectionKey={`${group.trait_id}-${group.option_group}`}
-          title={group.trait_name}
-          traitDescription={group.trait_description}
-          group={group}
-          selections={originFeatSelections}
-          data={data}
-          state={state}
-          onChange={onChange}
-          onOptionInfo={onOptionInfo}
-          buildNextState={(selection, max) =>
-            toggleOriginFeatTraitOption(state, data, selection, max)
           }
         />
       ))}

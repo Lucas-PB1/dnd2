@@ -7,7 +7,6 @@ import {
 } from "@/features/character-builder/components/shared/BuilderParts";
 import { BuilderDetailModal } from "@/features/character-builder/components/shared/BuilderDetailModal";
 import {
-  OriginFeatDetailContent,
   SpellDetailContent,
   TraitOptionDetailContent,
 } from "@/features/character-builder/components/shared/builder-detail-content";
@@ -17,7 +16,6 @@ import type {
   CharacterBuilderData,
   CharacterBuilderState,
 } from "@/features/character-builder/types/builder.types";
-import { ChoicesFeatsTab } from "./choices/ChoicesFeatsTab";
 import { ChoicesGearTab } from "./choices/ChoicesGearTab";
 import { ChoicesOptionalTab } from "./choices/ChoicesOptionalTab";
 import { ChoicesSkillsTab } from "./choices/ChoicesSkillsTab";
@@ -43,15 +41,14 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
   const cls = data.classes.find((c) => c.id === state.class_id);
   const species = data.species.find((s) => s.id === state.species_id);
   const background = data.backgrounds.find((b) => b.id === state.background_id);
-  const humanFeat = data.origin_feats.find(
-    (entry) => entry.id === state.human_origin_feat_id,
-  );
 
   const tabs = useChoiceTabs({
     cls,
     species,
     background,
-    humanFeat,
+    humanFeat: data.origin_feats.find(
+      (entry) => entry.id === state.human_origin_feat_id,
+    ),
     progressionFeats: data.progression_feats,
     state,
   });
@@ -93,7 +90,7 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
     <>
       <BuilderStepFrame
         title="Escolhas"
-        hint="Use as abas para alternar entre perícias, magias, traços, feats e equipamento."
+        hint="Use as abas para alternar entre perícias, magias, traços e equipamento."
       >
         {tabs.length > 0 ? (
           <BuilderSectionTabs
@@ -130,7 +127,9 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
               onChange={onChange}
               cls={cls}
               background={background}
-              humanFeat={humanFeat}
+              humanFeat={data.origin_feats.find(
+                (entry) => entry.id === state.human_origin_feat_id,
+              )}
               cantripFilter={cantripFilter}
               spellbookFilter={spellbookFilter}
               preparedFilter={preparedFilter}
@@ -155,21 +154,6 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
             />
           ) : null}
 
-          {resolvedTab === "feats" ? (
-            <ChoicesFeatsTab
-              data={data}
-              state={state}
-              onChange={onChange}
-              species={species}
-              background={background}
-              humanFeat={humanFeat}
-              onOptionInfo={openTraitOptionInfo}
-              onOriginFeatInfo={(featId, title) =>
-                setModal({ title, content: "origin", featId })
-              }
-            />
-          ) : null}
-
           {resolvedTab === "gear" ? (
             <ChoicesGearTab
               data={data}
@@ -191,20 +175,6 @@ export function StepChoices({ data, state, onChange }: StepChoicesProps) {
         ) : null}
         {modal?.content === "spell" && modal.spell ? (
           <SpellDetailContent spell={modal.spell} />
-        ) : null}
-        {modal?.content === "origin" && modal.featId ? (
-          <OriginFeatDetailContent
-            feat={
-              data.origin_feats.find((f) => f.id === modal.featId) ?? {
-                id: modal.featId,
-                name: modal.title,
-                description: null,
-                is_repeatable: false,
-                origin_feat_choices: [],
-                spellcasting: null,
-              }
-            }
-          />
         ) : null}
       </BuilderDetailModal>
     </>

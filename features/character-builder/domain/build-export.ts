@@ -58,6 +58,10 @@ export function importBuilderState(raw: string): CharacterBuilderState {
   return {
     ...createInitialBuilderState(),
     ...doc.state,
+    step:
+      doc.state.step >= 5
+        ? Math.min(doc.state.step + 1, 6)
+        : doc.state.step,
     shop_purchases: doc.state.shop_purchases ?? [],
     secondary_class: doc.state.secondary_class ?? null,
   };

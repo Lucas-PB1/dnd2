@@ -1,18 +1,13 @@
 import { isBaseAbilitiesComplete, parseSizeOptions } from "@/features/character-builder/domain/abilities/abilities";
+import { validateFeatStep } from "@/features/character-builder/domain/feats/feat-step";
 import { validateExpertiseSelections } from "@/features/character-builder/domain/expertise/class-expertise";
 import { validateOptionalFeatureSelections } from "@/features/character-builder/domain/optional-features";
-import {
-  progressionFeatLevelsForClass,
-  validateProgressionFeatSelections,
-} from "@/features/character-builder/domain/progression/feats";
 import { requiresSubclassSelection } from "@/features/character-builder/domain/progression/levels";
-import { applyBackgroundAsi } from "@/features/character-builder/domain/abilities/abilities";
 import { validateSpellSelections } from "@/features/character-builder/domain/spells/class-spells";
 import { validateFeatSpellSelections } from "@/features/character-builder/domain/spells/feat-spells";
 import { validateMulticlassSplit } from "@/features/character-builder/domain/multiclass/multiclass";
 import { validateShopPurchases } from "@/features/character-builder/domain/equipment/equipment-shop";
 import { effectiveEquipmentModeForState } from "@/features/character-builder/domain/equipment/equipment-mode";
-import { mergeOriginFeatTraitOptions } from "@/features/character-builder/domain/origin-feat";
 import type {
   CharacterBuilderData,
   CharacterBuilderState,
@@ -177,32 +172,6 @@ export function validateBuilderStep(
         }
       }
 
-      if (species.name === "Human" && !state.human_origin_feat_id) {
-        return "Humanos escolhem um feat de origem (Versátil).";
-      }
-
-      const originFeatOptions = mergeOriginFeatTraitOptions(
-        background,
-        state.origin_feat_trait_options,
-      );
-
-      for (const group of background.origin_feat_choices) {
-        const count = originFeatOptions.filter(
-          (entry) =>
-            entry.trait_id === group.trait_id &&
-            entry.option_group === group.option_group,
-        ).length;
-        if (
-          requiredChoiceCountError({
-            selectedCount: count,
-            choiceCount: group.choice_count,
-            isRequired: group.is_required,
-          })
-        ) {
-          return `Complete as escolhas do feat: ${group.trait_name}.`;
-        }
-      }
-
       const equipmentMode = effectiveEquipmentModeForState(state);
       if (equipmentMode === "background" || equipmentMode === "starting_gold") {
         if (!state.equipment_option_key) {
@@ -224,51 +193,20 @@ export function validateBuilderStep(
       const featSpellError = validateFeatSpellSelections(data, state);
       if (featSpellError) return featSpellError;
 
-      if (state.human_origin_feat_id) {
-        const humanFeat = data.origin_feats.find(
-          (entry) => entry.id === state.human_origin_feat_id,
-        );
-        for (const group of humanFeat?.origin_feat_choices ?? []) {
-          const count = state.human_origin_feat_trait_options.filter(
-            (entry) =>
-              entry.trait_id === group.trait_id &&
-              entry.option_group === group.option_group,
-          ).length;
-          if (
-            requiredChoiceCountError({
-              selectedCount: count,
-              choiceCount: group.choice_count,
-              isRequired: group.is_required,
-            })
-          ) {
-            return `Complete as escolhas do feat Versátil: ${group.trait_name}.`;
-          }
-        }
-      }
-
       const expertiseError = validateExpertiseSelections(cls, data, state);
       if (expertiseError) return expertiseError;
 
       const optionalError = validateOptionalFeatureSelections(cls, state);
       if (optionalError) return optionalError;
 
-      if (progressionFeatLevelsForClass(state.class_level).length > 0) {
-        const abilities = applyBackgroundAsi(
-          state.ability_assignment,
-          background.ability_options,
-          state.background_asi,
-        );
-        const progressionError = validateProgressionFeatSelections(
-          data,
-          state,
-          abilities,
-        );
-        if (progressionError) return progressionError;
-      }
-
       return null;
     }
     case 5: {
+      if (!data) return "Carregando catálogo…";
+      if (!data.details_loaded) return "Carregando talentos…";
+      return validateFeatStep(data, state);
+    }
+    case 6: {
       if (state.name.trim().length < 2) {
         return "Informe o nome do personagem (mínimo 2 caracteres).";
       }
