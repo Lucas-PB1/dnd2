@@ -1,4 +1,4 @@
-import type { CampaignMember } from "@/features/campaign/types/campaign.types";
+import type { CampaignMember } from "@/shared/campaign";
 
 type PlayerRow = {
   id: string;

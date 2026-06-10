@@ -155,12 +155,7 @@ export function sortSkills<T extends SkillLike>(entries: T[]): T[] {
   });
 }
 
-export function passivePerception(skills: SkillLike[]): number | null {
-  const perception = skills.find(
-    (entry) => entry.skill.toLowerCase() === "perception",
-  );
-  return perception ? 10 + perception.modifier : null;
-}
+export { passivePerception } from "@/shared/character/rules";
 
 export function groupProficiencies(
   entries: ProficiencyLike[],

@@ -5,7 +5,7 @@ import {
   spellSlotsRecoveryHint,
   spellSlotsSectionTitle,
 } from "@/features/character-sheet/domain/spell-slots-display";
-import type { CharacterSpellcastingInfo } from "@/features/character-sheet/types/character.types";
+import type { CharacterSpellcastingInfo } from "@/shared/character";
 
 const warlockPact: CharacterSpellcastingInfo = {
   class_name: "Warlock",

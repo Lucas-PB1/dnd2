@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ApiError } from "@/lib/api/errors";
-import type { CharacterCatalog } from "@/features/character-sheet/types/character.types";
+import type { CharacterCatalog } from "@/shared/character";
 
 export async function fetchCharacterCatalog(): Promise<CharacterCatalog> {
   const admin = createAdminClient();

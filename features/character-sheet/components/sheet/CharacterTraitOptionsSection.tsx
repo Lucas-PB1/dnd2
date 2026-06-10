@@ -1,5 +1,5 @@
 import { Surface } from "@/components/ui/Surface";
-import type { CharacterTraitOptionSummary } from "@/features/character-sheet/types/character.types";
+import type { CharacterTraitOptionSummary } from "@/shared/character";
 
 type CharacterTraitOptionsSectionProps = {
   options: CharacterTraitOptionSummary[];

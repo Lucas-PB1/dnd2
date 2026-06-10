@@ -1,4 +1,4 @@
-import type { CreateCharacterResponse } from "@/features/character-sheet/types/character.types";
+import type { CreateCharacterResponse } from "@/shared/character";
 import type {
   CharacterBuilderData,
   CharacterBuilderState,

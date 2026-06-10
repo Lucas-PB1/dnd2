@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ApiError } from "@/lib/api/errors";
 import { CAMPAIGN_BASE_SELECT, mapCampaignRow } from "@/lib/campaign/map-row";
-import type { Campaign } from "@/features/campaign/types/campaign.types";
+import type { Campaign } from "@/shared/campaign";
 
 export async function loadCampaign(campaignId: number): Promise<Campaign | null> {
   const admin = createAdminClient();

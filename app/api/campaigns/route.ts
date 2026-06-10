@@ -6,7 +6,7 @@ import {
   CAMPAIGN_NAME_MAX,
   CAMPAIGN_NAME_MIN,
   type CreateCampaignPayload,
-} from "@/features/campaign/types/campaign.types";
+} from "@/shared/campaign";
 
 export async function GET() {
   try {

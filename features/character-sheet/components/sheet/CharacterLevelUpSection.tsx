@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
 import { Surface } from "@/components/ui/Surface";
-import type { CharacterDetail } from "@/features/character-sheet/types/character.types";
+import type { CharacterDetail } from "@/shared/character";
 
 type CharacterLevelUpSectionProps = {
   character: CharacterDetail;

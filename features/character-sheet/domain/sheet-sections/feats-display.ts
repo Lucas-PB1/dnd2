@@ -1,4 +1,4 @@
-import type { CharacterFeatSummary } from "@/features/character-sheet/types/character.types";
+import type { CharacterFeatSummary } from "@/shared/character";
 
 const SOURCE_LABELS: Record<string, string> = {
   background: "Antecedente",

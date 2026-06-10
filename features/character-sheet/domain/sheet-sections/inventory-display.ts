@@ -1,5 +1,5 @@
 import { sortInventory } from "@/features/character-sheet/domain/sheet-display";
-import type { CharacterInventoryItem } from "@/features/character-sheet/types/character.types";
+import type { CharacterInventoryItem } from "@/shared/character";
 
 export const MAX_ATTUNEMENT = 3;
 

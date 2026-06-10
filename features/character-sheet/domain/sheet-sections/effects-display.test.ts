@@ -3,7 +3,7 @@ import {
   formatActiveEffects,
   formatEffectDetails,
 } from "@/features/character-sheet/domain/sheet-sections/effects-display";
-import type { CharacterActiveEffect } from "@/features/character-sheet/types/character.types";
+import type { CharacterActiveEffect } from "@/shared/character";
 
 const SAMPLE_EFFECT: CharacterActiveEffect = {
   source_type: "feat",

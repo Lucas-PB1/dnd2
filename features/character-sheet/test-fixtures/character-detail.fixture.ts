@@ -1,4 +1,4 @@
-import type { CharacterDetail } from "@/features/character-sheet/types/character.types";
+import type { CharacterDetail } from "@/shared/character";
 
 export function fullCharacterDetailFixture(
   patch: Partial<CharacterDetail> = {},

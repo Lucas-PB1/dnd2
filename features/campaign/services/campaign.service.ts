@@ -6,7 +6,7 @@ import type {
   CampaignMembersResponse,
   CreateCampaignPayload,
   InviteMemberPayload,
-} from "@/features/campaign/types/campaign.types";
+} from "@/shared/campaign";
 
 async function parseResponse<T>(response: Response): Promise<T> {
   const data: unknown = await response.json();

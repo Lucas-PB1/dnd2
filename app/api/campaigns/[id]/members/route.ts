@@ -10,7 +10,7 @@ import {
   INVITEABLE_ROLES,
   type CampaignInviteRole,
   type InviteMemberPayload,
-} from "@/features/campaign/types/campaign.types";
+} from "@/shared/campaign";
 
 type RouteContext = {
   params: Promise<{ id: string }>;

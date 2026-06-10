@@ -4,7 +4,7 @@ import { formatProficiencyBonus } from "@/features/character-sheet/domain/sheet-
 import type {
   CharacterActiveEffect,
   CharacterStatModifier,
-} from "@/features/character-sheet/types/character.types";
+} from "@/shared/character";
 
 type CharacterEffectsSectionProps = {
   effects: CharacterActiveEffect[];

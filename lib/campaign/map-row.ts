@@ -1,4 +1,4 @@
-import type { Campaign } from "@/features/campaign/types/campaign.types";
+import type { Campaign } from "@/shared/campaign";
 
 type CampaignRow = {
   id: number;

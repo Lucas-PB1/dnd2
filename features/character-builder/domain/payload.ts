@@ -1,352 +1,51 @@
-import { ApiError } from "@/lib/api/errors";
-import {
-  applyBackgroundAsi,
-  abilityModifier,
-  isBaseAbilitiesComplete,
-} from "@/features/character-builder/domain/abilities/abilities";
-import { requiresSubclassSelection } from "@/features/character-builder/domain/progression/levels";
-import {
-  buildProgressionFeatsPayload,
-  validateProgressionFeatSelections,
-} from "@/features/character-builder/domain/progression/feats";
-import { validateOptionalFeatureSelections } from "@/features/character-builder/domain/optional-features";
-import type {
-  AbilityKey,
-  CharacterBuilderData,
-  CharacterBuilderState,
-  CreateCharacterBuilderPayload,
-  TraitOptionSelection,
-} from "@/features/character-builder/types/builder.types";
-import { CHARACTER_NAME_MIN } from "@/features/character-sheet/types/character.types";
-import {
-  buildSkillsPayloadWithExpertise,
-  validateExpertiseSelections,
-} from "@/features/character-builder/domain/expertise/class-expertise";
-import {
-  buildSpellsRpcPayload,
-  classRequiresSpellSelection,
-  validateSpellSelections,
-} from "@/features/character-builder/domain/spells/class-spells";
-import {
-  buildFeatSpellsRpcPayload,
-  validateFeatSpellSelections,
-} from "@/features/character-builder/domain/spells/feat-spells";
-import { mergeOriginFeatTraitOptions } from "@/features/character-builder/domain/origin-feat";
+import { abilityModifier } from "@/features/character-builder/domain/abilities/abilities";
 import {
   buildEquipmentInventory,
-  effectiveEquipmentModeForState,
   resolveStartingGoldGp,
 } from "@/features/character-builder/domain/equipment/equipment-mode";
-import { validateShopPurchases } from "@/features/character-builder/domain/equipment/equipment-shop";
 import {
   buildClassesRpcPayload,
   computeMulticlassMaxHp,
-  validateMulticlassSplit,
 } from "@/features/character-builder/domain/multiclass/multiclass";
+import { buildProgressionFeatsPayload } from "@/features/character-builder/domain/progression/feats";
 import { applyProgressionAbilityDeltas } from "@/features/character-builder/domain/progression/asi";
+import { buildSpellsRpcPayload } from "@/features/character-builder/domain/spells/class-spells";
+import { buildFeatSpellsRpcPayload } from "@/features/character-builder/domain/spells/feat-spells";
+import { resolvePayloadCore } from "@/features/character-builder/domain/payload-core";
+import { toCreateCharacterRpcBody } from "@/features/character-builder/domain/payload-rpc";
+import { buildToolProficiencies } from "@/features/character-builder/domain/payload-tools";
+import { buildTraitOptions } from "@/features/character-builder/domain/payload-traits";
+import { validatePayloadChoices } from "@/features/character-builder/domain/payload-validation";
+import type {
+  CharacterBuilderData,
+  CharacterBuilderState,
+  CreateCharacterBuilderPayload,
+} from "@/features/character-builder/types/builder.types";
 
-function requiredChoiceCountError(params: {
-  selectedCount: number;
-  choiceCount: number;
-  isRequired?: boolean;
-}): boolean {
-  if (params.isRequired === false) {
-    return params.selectedCount > 0 && params.selectedCount !== params.choiceCount;
-  }
-  return params.selectedCount !== params.choiceCount;
-}
-
-function toolSelectionsForGroup(
-  selections: { source_type: string; source_id: number; option_group?: string }[],
-  params: { source_type: string; source_id: number; option_group: string },
-) {
-  return selections.filter(
-    (entry) =>
-      entry.source_type === params.source_type &&
-      entry.source_id === params.source_id &&
-      (entry.option_group ?? params.option_group) === params.option_group,
-  );
-}
+export { toCreateCharacterRpcBody };
 
 export function buildRpcPayloadFromBuilderState(
   data: CharacterBuilderData,
   state: CharacterBuilderState,
 ): CreateCharacterBuilderPayload {
-  const cls = data.classes.find((entry) => entry.id === state.class_id);
-  const species = data.species.find((entry) => entry.id === state.species_id);
-  const background = data.backgrounds.find(
-    (entry) => entry.id === state.background_id,
+  const { cls, species, background, name, size, abilities } =
+    resolvePayloadCore(data, state);
+  const { skillsPayload, spellsRequired } = validatePayloadChoices(
+    cls,
+    data,
+    state,
+    abilities,
   );
-
-  if (!cls || !species || !background) {
-    throw new ApiError("Seleções incompletas.", 400);
-  }
-
-  if (requiresSubclassSelection(state.class_level, cls.subclasses)) {
-    if (!state.subclass_id) {
-      throw new ApiError("Escolha uma subclasse.", 400);
-    }
-    if (!cls.subclasses.some((sub) => sub.id === state.subclass_id)) {
-      throw new ApiError("Subclasse inválida para esta classe.", 400);
-    }
-  } else if (state.subclass_id !== null) {
-    throw new ApiError("Subclasse só é permitida a partir do nível 3.", 400);
-  }
-
-  const multiclassError = validateMulticlassSplit(state, data.classes);
-  if (multiclassError) {
-    throw new ApiError(multiclassError, 400);
-  }
-
-  const shopError = validateShopPurchases(state);
-  if (shopError) {
-    throw new ApiError(shopError, 400);
-  }
-
-  const equipmentMode = effectiveEquipmentModeForState(state);
-
-  if (equipmentMode === "campaign_shop" && state.shop_purchases.length === 0) {
-    throw new ApiError("Selecione itens na loja de campanha ou mude o modo de equipamento.", 400);
-  }
-
-  const name = state.name.trim();
-  if (name.length < CHARACTER_NAME_MIN) {
-    throw new ApiError(
-      `O nome deve ter pelo menos ${CHARACTER_NAME_MIN} caracteres.`,
-      400,
-    );
-  }
-
-  const selectedRollSet =
-    state.selected_roll_index !== null
-      ? (state.roll_sets[state.selected_roll_index] ?? null)
-      : null;
-
-  if (
-    !isBaseAbilitiesComplete(
-      state.ability_method,
-      state.ability_assignment,
-      selectedRollSet,
-    )
-  ) {
-    throw new ApiError("Atributos base incompletos ou inválidos.", 400);
-  }
-
-  const abilities = applyBackgroundAsi(
-    state.ability_assignment,
-    background.ability_options,
-    state.background_asi,
-  );
-
-  const requiredClassSkills = cls.skill_choices.reduce(
-    (sum, group) => sum + group.choice_count,
-    0,
-  );
-  if (state.class_skill_ids.length !== requiredClassSkills) {
-    throw new ApiError("Selecione todas as perícias de classe.", 400);
-  }
-
-  for (const trait of species.traits) {
-    for (const group of trait.choice_groups) {
-      if (!group.is_required) continue;
-      const selected = state.species_trait_options.filter(
-        (opt) =>
-          opt.trait_id === group.trait_id &&
-          opt.option_group === group.option_group,
-      );
-      if (selected.length !== group.choice_count) {
-        throw new ApiError(
-          `Complete as escolhas de espécie: ${trait.name} (${group.option_group}).`,
-          400,
-        );
-      }
-    }
-  }
-
-  if (species.name === "Human" && !state.human_origin_feat_id) {
-    throw new ApiError("Humanos devem escolher um feat de origem (Versátil).", 400);
-  }
-
-  if (equipmentMode === "background" || equipmentMode === "starting_gold") {
-    if (!state.equipment_option_key) {
-      throw new ApiError("Escolha o equipamento inicial do antecedente.", 400);
-    }
-  }
-
-  const sizes = species.size_options.split(/\s+or\s+/i).map((s) => s.trim());
-  const size =
-    state.size ??
-    (sizes.length === 1 ? sizes[0] : null);
-  if (!size) {
-    throw new ApiError("Escolha o tamanho do personagem.", 400);
-  }
-
-  const trait_options: TraitOptionSelection[] = [...state.species_trait_options];
-
-  const originFeatOptions = mergeOriginFeatTraitOptions(
-    background,
-    state.origin_feat_trait_options,
-  );
-
-  for (const group of background.origin_feat_choices) {
-    const selected = originFeatOptions.filter(
-      (opt) =>
-        opt.trait_id === group.trait_id &&
-        opt.option_group === group.option_group,
-    );
-    if (
-      requiredChoiceCountError({
-        selectedCount: selected.length,
-        choiceCount: group.choice_count,
-        isRequired: group.is_required,
-      })
-    ) {
-      throw new ApiError(
-        `Complete as escolhas do feat de origem: ${group.trait_name}.`,
-        400,
-      );
-    }
-    trait_options.push(
-      ...selected.map((entry) => ({
-        ...entry,
-        selection_key:
-          background.origin_feat_selection_key ?? entry.selection_key,
-      })),
-    );
-  }
-
-  if (state.human_origin_feat_id) {
-    const humanFeat = data.origin_feats.find(
-      (entry) => entry.id === state.human_origin_feat_id,
-    );
-    for (const group of humanFeat?.origin_feat_choices ?? []) {
-      const selected = state.human_origin_feat_trait_options.filter(
-        (opt) =>
-          opt.trait_id === group.trait_id &&
-          opt.option_group === group.option_group,
-      );
-      if (
-        requiredChoiceCountError({
-          selectedCount: selected.length,
-          choiceCount: group.choice_count,
-          isRequired: group.is_required,
-        })
-      ) {
-        throw new ApiError(
-          `Complete as escolhas do feat Versátil: ${group.trait_name}.`,
-          400,
-        );
-      }
-      trait_options.push(...selected);
-    }
-  }
-
-  trait_options.push(...state.class_trait_option_selections);
-  trait_options.push(...state.progression_feat_trait_options);
-
-  const feats: CreateCharacterBuilderPayload["feats"] = [];
-  if (state.human_origin_feat_id) {
-    feats.push({
-      feat_id: state.human_origin_feat_id,
-      source_type: "species",
-      source_id: species.id,
-    });
-  }
-  feats.push(...buildProgressionFeatsPayload(data, state));
-
-  const inventory = buildEquipmentInventory(background, state);
-  const starting_gold_gp = resolveStartingGoldGp(state);
-
-  for (const group of cls.tool_choices) {
-    const selected = toolSelectionsForGroup(state.class_tool_selections, {
-      source_type: "class",
-      source_id: cls.id,
-      option_group: group.option_group,
-    });
-    if (selected.length !== group.choice_count) {
-      throw new ApiError(
-        `Selecione ${group.choice_count} ferramenta(s) de classe: ${group.option_group}.`,
-        400,
-      );
-    }
-  }
-
-  const requiredBackgroundToolChoices = background.tool_proficiency_options.filter(
-    (opt) => !opt.tool_id && opt.tool_category,
-  );
-  for (const opt of requiredBackgroundToolChoices) {
-    const selected = toolSelectionsForGroup(state.background_tool_selections, {
-      source_type: "background",
-      source_id: background.id,
-      option_group: opt.option_group,
-    });
-    if (selected.length !== opt.choice_count) {
-      throw new ApiError(
-        `Selecione a ferramenta do antecedente: ${opt.name}.`,
-        400,
-      );
-    }
-  }
-
-  const backgroundTools: typeof state.background_tool_selections = [
-    ...state.background_tool_selections,
-  ];
-  for (const opt of background.tool_proficiency_options) {
-    if (opt.tool_id) {
-      backgroundTools.push({
-        tool_id: opt.tool_id,
-        name: opt.name,
-        source_type: "background",
-        source_id: background.id,
-        option_group: opt.option_group,
-      });
-    }
-  }
-
-  const proficiencies = [
-    ...state.class_tool_selections,
-    ...backgroundTools,
-  ];
-
-  const expertiseError = validateExpertiseSelections(cls, data, state);
-  if (expertiseError) {
-    throw new ApiError(expertiseError, 400);
-  }
-
-  const optionalError = validateOptionalFeatureSelections(cls, state);
-  if (optionalError) {
-    throw new ApiError(optionalError, 400);
-  }
-
-  const progressionError = validateProgressionFeatSelections(data, state, abilities);
-  if (progressionError) {
-    throw new ApiError(progressionError, 400);
-  }
-
-  const skillsPayload = buildSkillsPayloadWithExpertise(data, state);
-
-  const spellError = validateSpellSelections(cls.spellcasting, state);
-  if (spellError) {
-    throw new ApiError(spellError, 400);
-  }
-
-  const featSpellError = validateFeatSpellSelections(data, state);
-  if (featSpellError) {
-    throw new ApiError(featSpellError, 400);
-  }
-
-  const spells = classRequiresSpellSelection(cls.spellcasting)
-    ? buildSpellsRpcPayload(state)
-    : [];
-  const trait_spell_choices = buildFeatSpellsRpcPayload(data, state);
-
   const abilitiesForDerivedStats = applyProgressionAbilityDeltas(
     abilities,
     data,
     state,
   );
-  const constitution = abilitiesForDerivedStats.CON;
-  const max_hp = computeMulticlassMaxHp(state, data.classes, abilityModifier(constitution));
+  const maxHp = computeMulticlassMaxHp(
+    state,
+    data.classes,
+    abilityModifier(abilitiesForDerivedStats.CON),
+  );
 
   return {
     name,
@@ -358,79 +57,34 @@ export function buildRpcPayloadFromBuilderState(
     background_id: background.id,
     size,
     abilities,
-    max_hp,
-    starting_gold_gp,
+    max_hp: maxHp,
+    starting_gold_gp: resolveStartingGoldGp(state),
     class_skill_ids: state.class_skill_ids,
-    proficiencies,
-    trait_options,
-    feats,
-    inventory,
-    spells,
-    trait_spell_choices,
+    proficiencies: buildToolProficiencies(cls, background, state),
+    trait_options: buildTraitOptions(data, state, background, species),
+    feats: buildFeatsPayload(data, state, species.id),
+    inventory: buildEquipmentInventory(background, state),
+    spells: spellsRequired ? buildSpellsRpcPayload(state) : [],
+    trait_spell_choices: buildFeatSpellsRpcPayload(data, state),
     _skillsPayload: skillsPayload,
   } as CreateCharacterBuilderPayload & { _skillsPayload: typeof skillsPayload };
 }
 
-export function toCreateCharacterRpcBody(
-  payload: CreateCharacterBuilderPayload & {
-    _skillsPayload?: { skill_id: number; is_proficient: boolean; has_expertise: boolean }[];
-  },
-) {
-  const abilities: Record<AbilityKey, number> = payload.abilities;
+function buildFeatsPayload(
+  data: CharacterBuilderData,
+  state: CharacterBuilderState,
+  speciesId: number,
+): CreateCharacterBuilderPayload["feats"] {
+  const feats: CreateCharacterBuilderPayload["feats"] = [];
 
-  return {
-    name: payload.name,
-    species_id: payload.species_id,
-    background_id: payload.background_id,
-    size: payload.size,
-    max_hp: payload.max_hp,
-    current_hp: payload.max_hp,
-    starting_gold_gp: payload.starting_gold_gp ?? 0,
-    abilities: {
-      STR: abilities.STR,
-      DEX: abilities.DEX,
-      CON: abilities.CON,
-      INT: abilities.INT,
-      WIS: abilities.WIS,
-      CHA: abilities.CHA,
-    },
-    classes: payload.classes,
-    skills: payload._skillsPayload ?? payload.class_skill_ids.map((skill_id) => ({
-      skill_id,
-      is_proficient: true,
-    })),
-    proficiencies: payload.proficiencies.map((prof) => ({
-      proficiency_type: "tool",
-      tool_id: prof.tool_id,
-      name: prof.name,
-      source_type: prof.source_type,
-      source_id: prof.source_id,
-    })),
-    trait_options: payload.trait_options.map((opt) => ({
-      trait_id: opt.trait_id,
-      option_group: opt.option_group,
-      selection_key: opt.selection_key,
-      trait_option_id: opt.trait_option_id,
-      source_type: "player",
-    })),
-    feats: payload.feats.map((feat) => ({
-      feat_id: feat.feat_id,
-      source_type: feat.source_type,
-      source_id: feat.source_id,
-      selection_key: feat.selection_key ?? null,
-    })),
-    inventory: payload.inventory,
-    spells: payload.spells,
-    trait_spell_choices: payload.trait_spell_choices.map((entry) => ({
-      trait_id: entry.trait_id,
-      choice_group: entry.choice_group,
-      selection_key: entry.selection_key,
-      spell_level: entry.spell_level,
-      spell_id: entry.spell_id,
-      trait_option_id: entry.trait_option_id ?? null,
-      spell_list_id: entry.spell_list_id ?? null,
-      source_type: entry.source_type,
-      source_id: entry.source_id,
-    })),
-  };
+  if (state.human_origin_feat_id) {
+    feats.push({
+      feat_id: state.human_origin_feat_id,
+      source_type: "species",
+      source_id: speciesId,
+    });
+  }
+
+  feats.push(...buildProgressionFeatsPayload(data, state));
+  return feats;
 }

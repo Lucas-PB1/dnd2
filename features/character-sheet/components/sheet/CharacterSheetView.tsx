@@ -19,7 +19,7 @@ import { CharacterEffectsSection } from "@/features/character-sheet/components/s
 import { CharacterFeatsSection } from "@/features/character-sheet/components/sheet/CharacterFeatsSection";
 import { CharacterTraitOptionsSection } from "@/features/character-sheet/components/sheet/CharacterTraitOptionsSection";
 import { formatProficiencyBonus } from "@/features/character-sheet/domain/sheet-display";
-import type { CharacterDetail } from "@/features/character-sheet/types/character.types";
+import type { CharacterDetail } from "@/shared/character";
 
 type CharacterSheetViewProps = {
   character: CharacterDetail;

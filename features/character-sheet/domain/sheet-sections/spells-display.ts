@@ -1,10 +1,9 @@
 import { sortSpells } from "@/features/character-sheet/domain/sheet-display";
 import type {
-  CharacterAbilityScore,
   CharacterKnownSpell,
   CharacterSpellcastingBlock,
   CharacterTraitSpellChoice,
-} from "@/features/character-sheet/types/character.types";
+} from "@/shared/character";
 
 export type SpellGroupKey =
   | "cantrips"
@@ -32,18 +31,6 @@ const GROUP_LABELS: Record<SpellGroupKey, string> = {
   always_prepared: "Sempre preparadas",
   trait_spells: "Magias de traços",
 };
-
-export function maxPreparedSpellCount(
-  entry: CharacterSpellcastingBlock,
-  abilities: CharacterAbilityScore[],
-): number | null {
-  if (!entry.spellcasting_ability) return null;
-  const ability = abilities.find(
-    (score) => score.ability === entry.spellcasting_ability,
-  );
-  if (!ability) return null;
-  return Math.max(1, entry.class_level + ability.modifier);
-}
 
 export function groupKnownSpells(
   spells: CharacterKnownSpell[],
@@ -110,7 +97,6 @@ export function groupTraitSpells(
 export function preparedSpellSummary(
   spells: CharacterKnownSpell[],
   spellcastingEntries: CharacterSpellcastingBlock[],
-  abilities: CharacterAbilityScore[],
 ): string | null {
   const preparedCount = spells.filter(
     (spell) =>
@@ -124,7 +110,7 @@ export function preparedSpellSummary(
   const primary = spellcastingEntries[0];
   if (!primary) return `${preparedCount} preparadas`;
 
-  const max = primary.prepared_count ?? maxPreparedSpellCount(primary, abilities);
+  const max = primary.prepared_count;
   return max == null
     ? `${preparedCount} preparadas`
     : `${preparedCount}/${max} preparadas`;

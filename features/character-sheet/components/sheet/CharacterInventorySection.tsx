@@ -11,7 +11,7 @@ import {
 } from "@/features/character-sheet/domain/sheet-sections/inventory-display";
 import type {
   CharacterInventoryItem,
-} from "@/features/character-sheet/types/character.types";
+} from "@/shared/character";
 
 type CharacterInventorySectionProps = {
   inventory: CharacterInventoryItem[];

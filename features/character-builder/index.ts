@@ -28,5 +28,3 @@ export {
   createCharacter,
   fetchCharacterCatalog,
 } from "./services/create.service";
-
-export { CreateCharacterForm } from "./components/legacy/CreateCharacterForm";

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
 import { Surface } from "@/components/ui/Surface";
-import type { Campaign } from "@/features/campaign/types/campaign.types";
+import type { Campaign } from "@/shared/campaign";
 import { CampaignCard } from "@/features/campaign/components/CampaignCard";
 import { CreateCampaignForm } from "@/features/campaign/components/CreateCampaignForm";
 

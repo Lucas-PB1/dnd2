@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/Badge";
 import { Surface } from "@/components/ui/Surface";
 import { formatProficiencyBonus } from "@/features/character-sheet/domain/sheet-display";
-import type { CharacterDetail } from "@/features/character-sheet/types/character.types";
+import type { CharacterDetail } from "@/shared/character";
 
 type CharacterVitalsSectionProps = {
   character: CharacterDetail;

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { CalendarDays, Crown, Users } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
-import type { Campaign } from "@/features/campaign/types/campaign.types";
+import type { Campaign } from "@/shared/campaign";
 
 type CampaignCardProps = {
   campaign: Campaign;

@@ -21,7 +21,7 @@ import {
   DEFAULT_INVITE_ROLE,
   type CampaignInviteRole,
   type CampaignMember,
-} from "@/features/campaign/types/campaign.types";
+} from "@/shared/campaign";
 
 type CampaignMembersPanelProps = {
   campaignId: number;

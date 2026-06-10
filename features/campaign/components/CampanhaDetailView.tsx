@@ -6,7 +6,7 @@ import { FadeIn } from "@/components/motion";
 import { Badge } from "@/components/ui/Badge";
 import { Surface } from "@/components/ui/Surface";
 import { CampaignMembersPanel } from "@/features/campaign/components/CampaignMembersPanel";
-import type { CampaignDetail } from "@/features/campaign/types/campaign.types";
+import type { CampaignDetail } from "@/shared/campaign";
 
 type CampanhaDetailViewProps = {
   campaign: CampaignDetail;

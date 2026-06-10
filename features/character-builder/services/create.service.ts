@@ -2,7 +2,7 @@ import type {
   CharacterCatalog,
   CreateCharacterPayload,
   CreateCharacterResponse,
-} from "@/features/character-sheet/types/character.types";
+} from "@/shared/character";
 
 async function parseResponse<T>(response: Response): Promise<T> {
   const data: unknown = await response.json();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { passivePerception } from "@/features/character-sheet/domain/sheet-display";
+import { passivePerception } from "@/shared/character/rules";
 import {
   mapAbilityScores,
   mapActiveEffect,

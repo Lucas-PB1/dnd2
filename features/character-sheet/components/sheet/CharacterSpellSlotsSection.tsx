@@ -2,7 +2,7 @@ import { Surface } from "@/components/ui/Surface";
 import type {
   CharacterSpellSlot,
   CharacterSpellcastingInfo,
-} from "@/features/character-sheet/types/character.types";
+} from "@/shared/character";
 import {
   formatSpellSlotLine,
   formatSpellSlotsCompact,

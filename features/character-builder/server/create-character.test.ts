@@ -15,7 +15,7 @@ import {
   buildRpcPayloadFromBuilderState,
   toCreateCharacterRpcBody,
 } from "@/features/character-builder/domain/payload";
-import { createCharacterFromBuilderState } from "./create";
+import { createCharacterFromBuilderState } from "./create-character";
 
 function state(
   patch: Partial<CharacterBuilderState> = {},

@@ -11,7 +11,7 @@ import {
   groupCharacterFeats,
 } from "@/features/character-sheet/domain/sheet-sections/feats-display";
 import { useCatalogSnippet } from "@/features/character-sheet/hooks/useCatalogSnippet";
-import type { CharacterFeatSummary } from "@/features/character-sheet/types/character.types";
+import type { CharacterFeatSummary } from "@/shared/character";
 
 type CharacterFeatsSectionProps = {
   characterId: number;

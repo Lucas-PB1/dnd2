@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { deleteCharacter } from "@/features/character-sheet/services/sheet.service";
-import type { CharacterSummary } from "@/features/character-sheet/types/character.types";
+import type { CharacterSummary } from "@/shared/character";
 
 type CharacterCardProps = {
   character: CharacterSummary;

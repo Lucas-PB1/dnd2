@@ -1,7 +1,7 @@
 import type {
   CharacterSpellSlot,
   CharacterSpellcastingInfo,
-} from "@/features/character-sheet/types/character.types";
+} from "@/shared/character";
 
 export function spellSlotsSectionTitle(
   spellcasting: CharacterSpellcastingInfo,

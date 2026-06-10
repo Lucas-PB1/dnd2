@@ -1,15 +1,13 @@
 import { createAuthedClient } from "@/lib/api/require-user";
 import { ApiError, jsonError, jsonOk } from "@/lib/api/errors";
-import {
-  createCharacterFromBuilderState,
-  createCharacterViaRpc,
-} from "@/lib/character/create";
+import { createCharacterFromBuilderState } from "@/features/character-builder/server/create-character";
+import { createCharacterViaRpc } from "@/lib/character/create";
 import { listCharactersForUser } from "@/lib/character/server";
 import {
   CHARACTER_NAME_MAX,
   CHARACTER_NAME_MIN,
   type CreateCharacterPayload,
-} from "@/features/character-sheet/types/character.types";
+} from "@/shared/character";
 import type { CharacterBuilderState } from "@/features/character-builder/types/builder.types";
 
 function isBuilderState(value: unknown): value is CharacterBuilderState {

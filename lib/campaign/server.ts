@@ -1,6 +1,6 @@
 import { createAuthedClient } from "@/lib/api/require-user";
 import { CAMPAIGN_SELECT, mapCampaignRow } from "@/lib/campaign/map-row";
-import type { Campaign } from "@/features/campaign/types/campaign.types";
+import type { Campaign } from "@/shared/campaign";
 
 export async function listCampaigns(): Promise<Campaign[]> {
   const { supabase } = await createAuthedClient();

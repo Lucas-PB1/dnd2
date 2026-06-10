@@ -13,7 +13,7 @@ import { createCampaign } from "@/features/campaign/services/campaign.service";
 import {
   CAMPAIGN_NAME_MIN,
   type Campaign,
-} from "@/features/campaign/types/campaign.types";
+} from "@/shared/campaign";
 
 type CreateCampaignFormProps = {
   onCreated?: (campaign: Campaign) => void;

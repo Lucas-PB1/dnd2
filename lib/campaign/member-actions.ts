@@ -9,8 +9,8 @@ import {
 import type {
   CampaignInviteRole,
   CampaignMember,
-} from "@/features/campaign/types/campaign.types";
-import { DEFAULT_INVITE_ROLE } from "@/features/campaign/types/campaign.types";
+} from "@/shared/campaign";
+import { DEFAULT_INVITE_ROLE } from "@/shared/campaign";
 
 export async function fetchCampaignMembersFromDb(
   campaignId: number,

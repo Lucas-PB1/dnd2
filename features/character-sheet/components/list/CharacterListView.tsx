@@ -6,7 +6,7 @@ import { Sparkles, UserPlus } from "lucide-react";
 import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
 import { Button } from "@/components/ui/Button";
 import { Surface } from "@/components/ui/Surface";
-import type { CharacterSummary } from "@/features/character-sheet/types/character.types";
+import type { CharacterSummary } from "@/shared/character";
 import { CharacterCard } from "./CharacterCard";
 
 type CharacterListViewProps = {
