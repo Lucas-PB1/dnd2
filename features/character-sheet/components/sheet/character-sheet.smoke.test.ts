@@ -114,7 +114,59 @@ describe("character sheet smoke", () => {
     expect(html).toContain("Truques");
     expect(html).toContain("Preparadas");
     expect(html).toContain("Grimório");
-    expect(html).toContain("2/5 preparadas");
+    expect(html).toContain("2/9 preparadas");
+  });
+
+  it("mostra ataque finesse com proficiência e maestria", () => {
+    const rogue = fullCharacterDetailFixture({
+      weapons: [
+        {
+          item_id: 10,
+          name: "Rapier",
+          is_equipped: true,
+          attack_ability: "DEX",
+          attack_ability_options: ["STR", "DEX"],
+          proficient: true,
+          attack_bonus: 7,
+          damage_formula: "1d8+4",
+          damage_type: "Piercing",
+          properties: "Finesse",
+          mastery_name: "Vex",
+        },
+      ],
+    });
+    const html = renderToStaticMarkup(
+      createElement(CharacterCombatSection, { character: rogue }),
+    );
+
+    expect(html).toContain("Rapier");
+    expect(html).toContain("Destreza");
+    expect(html).toContain("Força/Destreza");
+    expect(html).toContain("Prof");
+    expect(html).toContain("Maestria Vex");
+    expect(html).toContain("+7");
+  });
+
+  it("usa CA e deslocamento efetivos na seção de combate", () => {
+    const armored = fullCharacterDetailFixture({
+      sheet_summary: {
+        ...fullCharacterDetailFixture().sheet_summary!,
+        armor_class: 10,
+        effective_armor_class: 18,
+        speed: 30,
+        effective_speed: 20,
+        max_hp: 45,
+        effective_max_hp: 55,
+      },
+    });
+    const html = renderToStaticMarkup(
+      createElement(CharacterVitalsSection, { character: armored }),
+    );
+
+    expect(html).toContain("18");
+    expect(html).toContain("20 ft");
+    expect(html).toContain("45/55");
+    expect(html).not.toContain("30 ft");
   });
 });
 

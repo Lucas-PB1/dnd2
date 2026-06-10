@@ -21,8 +21,22 @@ describe("spells-display", () => {
     expect(groups.find((g) => g.key === "spellbook")?.spells).toHaveLength(2);
   });
 
-  it("calcula máximo de preparadas por atributo + nível de classe", () => {
+  it("usa prepared_count da tabela D&D 2024 quando disponível", () => {
     const character = wizardCharacterFixture();
+
+    expect(preparedSpellSummary(
+      character.known_spells,
+      character.spellcasting_entries,
+      character.abilities,
+    )).toBe("2/9 preparadas");
+  });
+
+  it("mantém fórmula antiga apenas como fallback de compatibilidade", () => {
+    const character = wizardCharacterFixture({
+      spellcasting_entries: wizardCharacterFixture().spellcasting_entries.map(
+        (entry) => ({ ...entry, prepared_count: null }),
+      ),
+    });
     const entry = character.spellcasting_entries[0]!;
 
     expect(maxPreparedSpellCount(entry, character.abilities)).toBe(5);

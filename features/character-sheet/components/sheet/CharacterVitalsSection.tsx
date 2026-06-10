@@ -27,6 +27,7 @@ export function CharacterVitalsSection({
 }: CharacterVitalsSectionProps) {
   const summary = character.sheet_summary;
   const dexterity = character.abilities.find((entry) => entry.ability === "DEX");
+  const maxHp = summary?.effective_max_hp ?? summary?.max_hp ?? 1;
 
   if (!summary) return null;
 
@@ -40,12 +41,12 @@ export function CharacterVitalsSection({
       </div>
 
       <dl className="mt-4 grid grid-cols-2 gap-2">
-        {statLine("CA", summary.armor_class)}
+        {statLine("CA", summary.effective_armor_class)}
         {statLine(
           "Iniciativa",
           dexterity ? formatProficiencyBonus(dexterity.modifier) : null,
         )}
-        {statLine("Desloc.", `${summary.speed} ft`)}
+        {statLine("Desloc.", `${summary.effective_speed} ft`)}
         {statLine("Percepção", character.passive_perception)}
       </dl>
 
@@ -53,7 +54,7 @@ export function CharacterVitalsSection({
         <div className="flex items-baseline justify-between gap-3">
           <span className="text-xs text-muted-subtle">Pontos de vida</span>
           <span className="text-sm font-medium tabular-nums text-foreground">
-            {summary.current_hp}/{summary.max_hp}
+            {summary.current_hp}/{maxHp}
           </span>
         </div>
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-raised">
@@ -62,7 +63,7 @@ export function CharacterVitalsSection({
             style={{
               width: `${Math.max(
                 0,
-                Math.min(100, (summary.current_hp / summary.max_hp) * 100),
+                Math.min(100, (summary.current_hp / maxHp) * 100),
               )}%`,
             }}
           />

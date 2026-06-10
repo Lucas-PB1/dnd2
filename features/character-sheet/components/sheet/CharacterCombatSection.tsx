@@ -37,10 +37,23 @@ export function CharacterCombatSection({ character }: CharacterCombatSectionProp
                 </p>
                 <p className="mt-0.5 text-xs text-muted-subtle">
                   {abilityLabel(weapon.attack_ability)}
+                  {weapon.attack_ability_options.length > 1
+                    ? ` (${weapon.attack_ability_options.map(abilityLabel).join("/")})`
+                    : ""}
                   {weapon.properties ? ` · ${weapon.properties}` : ""}
                 </p>
               </div>
-              {weapon.is_equipped ? <Badge tone="success">Equipada</Badge> : null}
+              <div className="flex flex-wrap justify-end gap-1.5">
+                {weapon.proficient ? (
+                  <Badge tone="accent">Prof</Badge>
+                ) : (
+                  <Badge tone="neutral">Sem prof</Badge>
+                )}
+                {weapon.mastery_name ? (
+                  <Badge tone="neutral">Maestria {weapon.mastery_name}</Badge>
+                ) : null}
+                {weapon.is_equipped ? <Badge tone="success">Equipada</Badge> : null}
+              </div>
             </div>
             <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
               <div>

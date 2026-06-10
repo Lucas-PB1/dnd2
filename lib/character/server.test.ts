@@ -21,7 +21,7 @@ const CHARACTER_ROW = {
   updated_at: "2026-01-01T00:00:00Z",
   species: { name: "Human" },
   backgrounds: { name: "Soldier" },
-  character_classes: [{ class_level: 5, classes: { name: "Fighter" } }],
+  character_classes: [{ class_id: 30, class_level: 5, classes: { name: "Fighter" } }],
 };
 
 function queryResult(data: unknown, error: unknown = null) {
@@ -156,6 +156,24 @@ describe("getCharacterForUser", () => {
         if (name === "get_character_sheet") {
           return queryResult({
             summary: { armor_class: 18, max_hp: 45, current_hp: 45 },
+            traits: [
+              {
+                trait_id: 1,
+                trait_name: "Second Wind",
+                source_type: "class",
+                source_name: "Fighter",
+                level_required: 1,
+              },
+            ],
+            proficiencies: [
+              {
+                proficiency_type: "armor",
+                tool_id: null,
+                name: "Heavy Armor",
+                source_type: "class",
+                source_id: 1,
+              },
+            ],
             inventory: [
               {
                 item_id: 1,
@@ -193,7 +211,10 @@ describe("getCharacterForUser", () => {
                 name: "Longsword",
                 is_equipped: true,
                 attack_ability: "STR",
+                attack_ability_options: ["STR"],
+                proficient: true,
                 attack_bonus: 6,
+                mastery_name: "Sap",
               },
             ],
             spell_slots: [
@@ -202,6 +223,16 @@ describe("getCharacterForUser", () => {
                 max_slots: 4,
                 used_slots: 2,
                 remaining: 2,
+              },
+            ],
+            resources: [
+              {
+                trait_id: 1,
+                resource_key: "second-wind",
+                name: "Second Wind",
+                max_uses: 1,
+                used_uses: 0,
+                reset_on: "Short Rest",
               },
             ],
           });
@@ -226,6 +257,7 @@ describe("getCharacterForUser", () => {
     expect(character?.abilities[0]?.score).toBe(16);
     expect(character?.inventory[0]?.name).toBe("Longsword");
     expect(character?.weapons[0]?.attack_bonus).toBe(6);
+    expect(character?.proficiencies[0]?.name).toBe("Heavy Armor");
     expect(character?.traits[0]?.trait_name).toBe("Second Wind");
     expect(character?.resources[0]?.name).toBe("Second Wind");
     expect(character?.known_spells[0]?.name).toBe("Shield");
@@ -242,7 +274,8 @@ describe("getCharacterForUser", () => {
     expect(character?.abilities).toEqual([]);
     expect(character?.weapons).toEqual([]);
     expect(character?.active_effects).toEqual([]);
-    expect(character?.traits[0]?.trait_name).toBe("Second Wind");
+    expect(character?.traits).toEqual([]);
+    expect(character?.resources).toEqual([]);
     expect(character?.known_spells[0]?.name).toBe("Shield");
   });
 

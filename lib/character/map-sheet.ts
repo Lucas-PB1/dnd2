@@ -3,12 +3,15 @@ import type {
   CharacterAbilityScore,
   CharacterActiveEffect,
   CharacterInventoryItem,
+  CharacterProficiency,
+  CharacterResourceSummary,
   CharacterSavingThrow,
   CharacterSheetSummary,
   CharacterSkillCheck,
   CharacterSpellcastingBlock,
   CharacterSpellSlot,
   CharacterStatModifier,
+  CharacterTraitSummary,
   CharacterTraitOptionSummary,
   CharacterTraitSpellChoice,
   CharacterWeaponAttack,
@@ -22,6 +25,8 @@ export type SkillCatalogRow = {
 export type SheetRpcData = {
   summary: CharacterSheetSummary | null;
   inventory: CharacterInventoryItem[];
+  traits: CharacterTraitSummary[];
+  proficiencies: CharacterProficiency[];
   active_effects: CharacterActiveEffect[];
   stat_modifiers: CharacterStatModifier[];
   trait_options: CharacterTraitOptionSummary[];
@@ -35,6 +40,7 @@ export type RollContextData = {
   spellcasting_entries: CharacterSpellcastingBlock[];
   weapons: CharacterWeaponAttack[];
   spell_slots: CharacterSpellSlot[];
+  resources: CharacterResourceSummary[];
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -87,6 +93,8 @@ export function emptySheetRpcData(): SheetRpcData {
   return {
     summary: null,
     inventory: [],
+    traits: [],
+    proficiencies: [],
     active_effects: [],
     stat_modifiers: [],
     trait_options: [],
@@ -102,6 +110,7 @@ export function emptyRollContextData(): RollContextData {
     spellcasting_entries: [],
     weapons: [],
     spell_slots: [],
+    resources: [],
   };
 }
 
@@ -123,13 +132,63 @@ export function mapSheetSummary(value: unknown): CharacterSheetSummary | null {
     speed: asNumber(value.speed),
     current_hp: asNumber(value.current_hp),
     max_hp: asNumber(value.max_hp, 1),
+    effective_max_hp: asNumber(
+      value.effective_max_hp,
+      asNumber(value.max_hp, 1),
+    ),
     temporary_hp: asNumber(value.temporary_hp),
     death_save_successes: asNumber(value.death_save_successes),
     death_save_failures: asNumber(value.death_save_failures),
     heroic_inspiration: asBoolean(value.heroic_inspiration),
     armor_class: asNumber(value.armor_class, 10),
+    effective_armor_class: asNumber(
+      value.effective_armor_class,
+      asNumber(value.armor_class, 10),
+    ),
+    effective_speed: asNumber(value.effective_speed, asNumber(value.speed)),
     feats: asString(value.feats),
     conditions: asString(value.conditions),
+  };
+}
+
+export function mapTraitSummary(value: unknown): CharacterTraitSummary | null {
+  if (!isRecord(value)) return null;
+
+  return {
+    trait_id: asNumber(value.trait_id),
+    trait_name: asString(value.trait_name) ?? "Traço",
+    source_type: asString(value.source_type) ?? "trait",
+    source_name: asString(value.source_name) ?? "Fonte",
+    level_required: typeof value.level_required === "number"
+      ? value.level_required
+      : null,
+  };
+}
+
+export function mapProficiency(value: unknown): CharacterProficiency | null {
+  if (!isRecord(value)) return null;
+
+  return {
+    proficiency_type: asString(value.proficiency_type) ?? "other",
+    name: asString(value.name) ?? "Proficiência",
+    tool_id: typeof value.tool_id === "number" ? value.tool_id : null,
+    tool_category: asString(value.tool_category),
+    tool_base_attribute: asAbilityKey(value.tool_base_attribute),
+    source_type: asString(value.source_type),
+    source_id: typeof value.source_id === "number" ? value.source_id : null,
+  };
+}
+
+export function mapResource(value: unknown): CharacterResourceSummary | null {
+  if (!isRecord(value)) return null;
+
+  return {
+    trait_id: typeof value.trait_id === "number" ? value.trait_id : null,
+    resource_key: asString(value.resource_key),
+    name: asString(value.name) ?? "Recurso",
+    max_uses: asNumber(value.max_uses),
+    used_uses: asNumber(value.used_uses),
+    reset_on: asString(value.reset_on),
   };
 }
 
@@ -297,6 +356,8 @@ export function mapSpellcastingBlock(value: unknown): CharacterSpellcastingBlock
     class_name: asString(value.class_name) ?? "Classe",
     class_level: asNumber(value.class_level),
     spellcasting_ability: asAbilityKey(value.spellcasting_ability),
+    prepared_count:
+      typeof value.prepared_count === "number" ? value.prepared_count : null,
     spell_attack_bonus:
       typeof value.spell_attack_bonus === "number" ? value.spell_attack_bonus : null,
     spell_save_dc:
@@ -312,11 +373,19 @@ export function mapWeaponAttack(value: unknown): CharacterWeaponAttack | null {
     name: asString(value.name) ?? "Arma",
     is_equipped: asBoolean(value.is_equipped),
     attack_ability: asAbilityKey(value.attack_ability),
+    attack_ability_options: asArray(value.attack_ability_options).flatMap(
+      (entry) => {
+        const ability = asAbilityKey(entry);
+        return ability ? [ability] : [];
+      },
+    ),
+    proficient: asBoolean(value.proficient),
     attack_bonus:
       typeof value.attack_bonus === "number" ? value.attack_bonus : null,
     damage_formula: asString(value.damage_formula),
     damage_type: asString(value.damage_type),
     properties: asString(value.properties),
+    mastery_name: asString(value.mastery_name),
   };
 }
 
@@ -366,6 +435,14 @@ export function mapSheetRpcResponse(data: unknown): SheetRpcData {
       const item = mapInventoryItem(entry);
       return item ? [item] : [];
     }),
+    traits: asArray(data.traits).flatMap((entry) => {
+      const trait = mapTraitSummary(entry);
+      return trait ? [trait] : [];
+    }),
+    proficiencies: asArray(data.proficiencies).flatMap((entry) => {
+      const proficiency = mapProficiency(entry);
+      return proficiency ? [proficiency] : [];
+    }),
     active_effects: asArray(data.active_effects).flatMap((entry) => {
       const effect = mapActiveEffect(entry);
       return effect ? [effect] : [];
@@ -409,6 +486,10 @@ export function mapRollContextResponse(data: unknown): RollContextData {
     spell_slots: asArray(data.spell_slots).flatMap((entry) => {
       const slot = mapSpellSlot(entry);
       return slot && slot.max_slots > 0 ? [slot] : [];
+    }),
+    resources: asArray(data.resources).flatMap((entry) => {
+      const resource = mapResource(entry);
+      return resource ? [resource] : [];
     }),
   };
 }

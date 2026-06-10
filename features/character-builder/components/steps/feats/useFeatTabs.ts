@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import type {
-  BuilderBackgroundEntry,
   BuilderSpeciesEntry,
   CharacterBuilderData,
   CharacterBuilderState,
@@ -24,15 +23,13 @@ export type FeatTabItem = {
 type UseFeatTabsInput = {
   data: CharacterBuilderData;
   state: CharacterBuilderState;
-  species: BuilderSpeciesEntry;
-  background: BuilderBackgroundEntry;
+  species: BuilderSpeciesEntry | null | undefined;
 };
 
 export function useFeatTabs({
   data,
   state,
   species,
-  background,
 }: UseFeatTabsInput): FeatTabItem[] {
   return useMemo(() => {
     const items: FeatTabItem[] = [];
@@ -41,7 +38,7 @@ export function useFeatTabs({
       items.push({
         id: "origin",
         label: "Origem",
-        badge: species.name === "Human" && !state.human_origin_feat_id
+        badge: species?.name === "Human" && !state.human_origin_feat_id
           ? "Pendente"
           : undefined,
       });
@@ -58,5 +55,5 @@ export function useFeatTabs({
     }
 
     return items;
-  }, [data, state, species.name, background]);
+  }, [data, state, species?.name]);
 }

@@ -124,7 +124,7 @@ export function preparedSpellSummary(
   const primary = spellcastingEntries[0];
   if (!primary) return `${preparedCount} preparadas`;
 
-  const max = maxPreparedSpellCount(primary, abilities);
+  const max = primary.prepared_count ?? maxPreparedSpellCount(primary, abilities);
   return max == null
     ? `${preparedCount} preparadas`
     : `${preparedCount}/${max} preparadas`;

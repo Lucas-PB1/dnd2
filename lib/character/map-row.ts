@@ -8,6 +8,7 @@ type BackgroundRef = { name: string } | { name: string }[] | null;
 type ClassRef = { name: string } | { name: string }[] | null;
 
 type CharacterClassRow = {
+  class_id: number;
   class_level: number;
   classes: ClassRef;
 };
@@ -35,6 +36,7 @@ function mapClasses(rows: CharacterClassRow[] | null): CharacterClassSummary[] {
 
   return rows
     .map((row) => ({
+      class_id: row.class_id ?? 0,
       name: unwrapName(row.classes) ?? "Classe",
       level: row.class_level,
     }))
@@ -64,7 +66,7 @@ export const CHARACTER_LIST_SELECT = `
   updated_at,
   species ( name ),
   backgrounds ( name ),
-  character_classes ( class_level, classes ( name ) )
+  character_classes ( class_id, class_level, classes ( name ) )
 ` as const;
 
 export function buildCreateCharacterRpcPayload(payload: {

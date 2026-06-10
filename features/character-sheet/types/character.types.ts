@@ -1,4 +1,5 @@
 export type CharacterClassSummary = {
+  class_id: number;
   name: string;
   level: number;
 };
@@ -23,11 +24,14 @@ export type CharacterSheetSummary = {
   speed: number;
   current_hp: number;
   max_hp: number;
+  effective_max_hp: number;
   temporary_hp: number;
   death_save_successes: number;
   death_save_failures: number;
   heroic_inspiration: boolean;
   armor_class: number;
+  effective_armor_class: number;
+  effective_speed: number;
   feats: string | null;
   conditions: string | null;
 };
@@ -59,6 +63,7 @@ export type CharacterSpellcastingBlock = {
   class_name: string;
   class_level: number;
   spellcasting_ability: CharacterAbilityKey | null;
+  prepared_count: number | null;
   spell_attack_bonus: number | null;
   spell_save_dc: number | null;
 };
@@ -68,10 +73,13 @@ export type CharacterWeaponAttack = {
   name: string;
   is_equipped: boolean;
   attack_ability: CharacterAbilityKey | null;
+  attack_ability_options: CharacterAbilityKey[];
+  proficient: boolean;
   attack_bonus: number | null;
   damage_formula: string | null;
   damage_type: string | null;
   properties: string | null;
+  mastery_name: string | null;
 };
 
 export type CharacterInventoryItem = {

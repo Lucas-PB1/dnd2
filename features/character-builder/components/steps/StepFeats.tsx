@@ -43,6 +43,7 @@ export function StepFeats({ data, state, onChange }: StepFeatsProps) {
   const humanFeat = data.origin_feats.find(
     (entry) => entry.id === state.human_origin_feat_id,
   );
+  const tabs = useFeatTabs({ data, state, species });
 
   if (!species || !background) {
     return (
@@ -67,7 +68,6 @@ export function StepFeats({ data, state, onChange }: StepFeatsProps) {
     );
   }
 
-  const tabs = useFeatTabs({ data, state, species, background });
   const resolvedTab = tabs.some((tab) => tab.id === activeTab)
     ? activeTab
     : (tabs[0]?.id ?? "origin");

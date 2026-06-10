@@ -15,14 +15,24 @@ type CharacterLevelUpSectionProps = {
 export function CharacterLevelUpSection({ character }: CharacterLevelUpSectionProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [className, setClassName] = useState(character.classes[0]?.name ?? "");
+  const [classId, setClassId] = useState(character.classes[0]?.class_id ?? 0);
   const [newLevel, setNewLevel] = useState(
     String((character.classes[0]?.level ?? 0) + 1),
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const selectedClass = character.classes.find((entry) => entry.name === className);
+  const selectedClass = character.classes.find((entry) => entry.class_id === classId);
+  const remainingLevels = Math.max(0, 20 - character.level);
+  const maxSelectedClassLevel = selectedClass
+    ? selectedClass.level + remainingLevels
+    : 0;
+  const levelOptions = selectedClass
+    ? Array.from(
+        { length: Math.max(0, maxSelectedClassLevel - selectedClass.level) },
+        (_, index) => selectedClass.level + index + 1,
+      )
+    : [];
 
   async function handleLevelUp() {
     if (!selectedClass) return;
@@ -31,27 +41,12 @@ export function CharacterLevelUpSection({ character }: CharacterLevelUpSectionPr
     setError(null);
 
     try {
-      const catalogResponse = await fetch("/api/characters/catalog", {
-        credentials: "include",
-      });
-      const catalog = catalogResponse.ok
-        ? ((await catalogResponse.json()) as {
-            classes?: { id: number; name: string }[];
-          })
-        : { classes: [] };
-
-      const classId = catalog.classes?.find((entry) => entry.name === selectedClass.name)?.id;
-
-      if (!classId) {
-        throw new Error("Classe não encontrada no catálogo.");
-      }
-
       const response = await fetch(`/api/characters/${character.id}/level-up`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          class_id: classId,
+          class_id: selectedClass.class_id,
           new_class_level: Number(newLevel),
         }),
       });
@@ -99,17 +94,18 @@ export function CharacterLevelUpSection({ character }: CharacterLevelUpSectionPr
             <Select
               id="level-up-class"
               className="mt-1.5 w-full"
-              value={className}
+              value={String(classId)}
               onChange={(event) => {
-                setClassName(event.target.value);
+                const nextClassId = Number(event.target.value);
+                setClassId(nextClassId);
                 const cls = character.classes.find(
-                  (entry) => entry.name === event.target.value,
+                  (entry) => entry.class_id === nextClassId,
                 );
                 setNewLevel(String((cls?.level ?? 0) + 1));
               }}
             >
               {character.classes.map((entry) => (
-                <option key={entry.name} value={entry.name}>
+                <option key={entry.class_id} value={entry.class_id}>
                   {entry.name} {entry.level}
                 </option>
               ))}
@@ -123,7 +119,7 @@ export function CharacterLevelUpSection({ character }: CharacterLevelUpSectionPr
               value={newLevel}
               onChange={(event) => setNewLevel(event.target.value)}
             >
-              {Array.from({ length: 20 }, (_, index) => index + 1).map((level) => (
+              {levelOptions.map((level) => (
                 <option key={level} value={level}>
                   Nível {level}
                 </option>

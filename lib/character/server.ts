@@ -21,12 +21,9 @@ import type {
   CharacterDetail,
   CharacterFeatSummary,
   CharacterKnownSpell,
-  CharacterProficiency,
-  CharacterResourceSummary,
   CharacterSpellcastingInfo,
   CharacterSpellSlot,
   CharacterSummary,
-  CharacterTraitSummary,
 } from "@/features/character-sheet/types/character.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -123,14 +120,6 @@ type SpellSlotRow = {
   used_slots: number;
 };
 
-type CharacterTraitRow = {
-  trait_id: number;
-  trait_name: string;
-  source_type: string;
-  source_name: string;
-  level_required: number | null;
-};
-
 type CharacterFeatRow = {
   feat_id: number;
   source_type: string;
@@ -143,34 +132,7 @@ type CharacterFeatRow = {
     | null;
 };
 
-type CharacterResourceRow = {
-  trait_id: number | null;
-  resource_key: string | null;
-  name: string;
-  max_uses: number;
-  used_uses: number;
-  reset_on: string | null;
-};
-
 type AuthenticatedSheetClient = Pick<SupabaseClient, "rpc">;
-
-type ProficiencyRow = {
-  proficiency_type: string;
-  tool_id: number | null;
-  name: string;
-  source_type: string | null;
-  source_id: number | null;
-  tools:
-    | {
-        category: string | null;
-        base_attribute: string | null;
-      }
-    | {
-        category: string | null;
-        base_attribute: string | null;
-      }[]
-    | null;
-};
 
 type CharacterSpellRow = {
   source_type: string | null;
@@ -325,55 +287,6 @@ function resolveSpellSlots(
   return adminSlots;
 }
 
-async function fetchCharacterTraits(
-  admin: ReturnType<typeof createAdminClient>,
-  characterId: number,
-): Promise<CharacterTraitSummary[]> {
-  const { data, error } = await admin
-    .from("v_character_traits")
-    .select("trait_id, trait_name, source_type, source_name, level_required")
-    .eq("character_id", characterId)
-    .order("source_type")
-    .order("level_required", { ascending: true, nullsFirst: true })
-    .order("trait_name");
-
-  if (error) {
-    throw new ApiError(error.message, 400);
-  }
-
-  return ((data ?? []) as CharacterTraitRow[]).map((row) => ({
-    trait_id: row.trait_id,
-    trait_name: row.trait_name,
-    source_type: row.source_type,
-    source_name: row.source_name,
-    level_required: row.level_required,
-  }));
-}
-
-async function fetchCharacterResources(
-  admin: ReturnType<typeof createAdminClient>,
-  characterId: number,
-): Promise<CharacterResourceSummary[]> {
-  const { data, error } = await admin
-    .from("character_resources")
-    .select("trait_id, resource_key, name, max_uses, used_uses, reset_on")
-    .eq("character_id", characterId)
-    .order("name");
-
-  if (error) {
-    throw new ApiError(error.message, 400);
-  }
-
-  return ((data ?? []) as CharacterResourceRow[]).map((row) => ({
-    trait_id: row.trait_id,
-    resource_key: row.resource_key,
-    name: row.name,
-    max_uses: row.max_uses,
-    used_uses: row.used_uses,
-    reset_on: row.reset_on,
-  }));
-}
-
 async function fetchSkillCatalog(
   admin: ReturnType<typeof createAdminClient>,
 ): Promise<SkillCatalogRow[]> {
@@ -387,44 +300,6 @@ async function fetchSkillCatalog(
   }
 
   return (data ?? []) as SkillCatalogRow[];
-}
-
-async function fetchCharacterProficiencies(
-  admin: ReturnType<typeof createAdminClient>,
-  characterId: number,
-): Promise<CharacterProficiency[]> {
-  const { data, error } = await admin
-    .from("character_proficiencies")
-    .select(
-      `
-      proficiency_type,
-      tool_id,
-      name,
-      source_type,
-      source_id,
-      tools ( category, base_attribute )
-    `,
-    )
-    .eq("character_id", characterId)
-    .order("proficiency_type")
-    .order("name");
-
-  if (error) {
-    throw new ApiError(error.message, 400);
-  }
-
-  return ((data ?? []) as ProficiencyRow[]).map((row) => {
-    const tool = unwrap(row.tools);
-    return {
-      proficiency_type: row.proficiency_type,
-      name: row.name,
-      tool_id: row.tool_id,
-      tool_category: tool?.category ?? null,
-      tool_base_attribute: asAbilityKey(tool?.base_attribute),
-      source_type: row.source_type,
-      source_id: row.source_id,
-    };
-  });
 }
 
 async function fetchCharacterKnownSpells(
@@ -559,10 +434,7 @@ export async function getCharacterForUser(
   const [
     adminSpellSlots,
     spellcasting,
-    traits,
-    resources,
     skillCatalog,
-    proficiencies,
     known_spells,
     character_feats,
     sheet,
@@ -570,10 +442,7 @@ export async function getCharacterForUser(
   ] = await Promise.all([
     fetchCharacterSpellSlots(admin, characterId),
     fetchPrimarySpellcasting(admin, characterId),
-    fetchCharacterTraits(admin, characterId),
-    fetchCharacterResources(admin, characterId),
     fetchSkillCatalog(admin),
-    fetchCharacterProficiencies(admin, characterId),
     fetchCharacterKnownSpells(admin, characterId),
     fetchCharacterFeats(admin, characterId),
     fetchCharacterSheetRpc(authClient, characterId),
@@ -603,14 +472,14 @@ export async function getCharacterForUser(
     spellcasting_entries: rollContext.spellcasting_entries,
     weapons: rollContext.weapons,
     inventory: sheet.inventory,
-    proficiencies,
+    proficiencies: sheet.proficiencies,
     known_spells,
     trait_options: sheet.trait_options,
     trait_spell_choices: sheet.trait_spell_choices,
     active_effects: sheet.active_effects,
     stat_modifiers: sheet.stat_modifiers,
-    traits,
-    resources,
+    traits: sheet.traits,
+    resources: rollContext.resources,
     character_feats,
   };
 }
